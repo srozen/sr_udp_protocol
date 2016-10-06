@@ -1,5 +1,6 @@
 #ifndef HEADER_H_INCLUDED
 #define HEADER_H_INCLUDED
+#include <stdint.h>
 
 struct {
     uint32_t type : 3,

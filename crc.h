@@ -1,5 +1,6 @@
 #ifndef CRC_H_INCLUDED
 #define CRC_H_INCLUDED
+#include <stdint.h>
 
 struct {
     uint32_t crc;
