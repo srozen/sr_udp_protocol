@@ -3,9 +3,9 @@
 
 
 struct {
-    struct headerFrame header;
+    struct headerFrame *header;
     char * payload;
-    struct crcFrame crc;
+    struct crcFrame *crc;
 } frame;
 
 /**
