@@ -2,7 +2,7 @@
 
 ## Testing Suite
 
-This project will use [CMocka](https://cmocka.org) as a testing suite, enabling us to mock objects and write
+This project will use [Criterion](https://github.com/Snaipe/Criterion) as a testing suite, enabling us to mock objects and write
 elegant and useful tests on the program.
 
-Please install CMocka in order to run tests. CMocka's lib is included like any other C library.
+Please install Criterion in order to run tests. Criterion's lib is included like any other C library.
