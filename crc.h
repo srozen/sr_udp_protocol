@@ -15,4 +15,20 @@ struct {
 */
 int crc_init(struct crcFrame * );
 
+
+/**
+ * Compute a CRC
+ * @pre: frame != null
+ * @post: crc is computed with header & payload (if payload != NULL)
+ * @return: 1 if error, else 0
+ */
+int crc_compute(struct frame *);
+
+/**
+ * Compare CRC
+ * @pre: frame!= null
+ * @return: 1 if not equals, 0 else
+ */
+int crc_compare(struct frame *);
+
 #endif // CRC_H_INCLUDED
