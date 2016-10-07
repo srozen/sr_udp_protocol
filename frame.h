@@ -1,12 +1,11 @@
 #ifndef FRAME_H_INCLUDED
 #define FRAME_H_INCLUDED
 
-
-struct {
+struct frame{
     struct headerFrame *header;
     char * payload;
-    struct crcFrame *crc;
-} frame;
+    struct crc *crc;
+};
 
 /**
 * Init a frame
