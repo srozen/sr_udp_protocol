@@ -46,6 +46,7 @@ pkt_t *pkt_new() {
     packet->header.seqnum = 0;
     packet->header.timestamp = 0;
     packet->crc = 0;
+    packet->payload = NULL;
     return packet;
 }
 
@@ -57,6 +58,11 @@ void pkt_del(pkt_t *pkt) {
 }
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
+
+    if (len <= sizeof(pkt->header)){
+        return E_NOHEADER;
+    }
+
     size_t readBytes = 0;
 
     memcpy(&pkt->header, data, sizeof(pkt->header));
