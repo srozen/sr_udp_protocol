@@ -10,10 +10,10 @@ all: $(EXEC)
 test: test.o packet_implem.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-sender: sender.o
+sender: sender.o functions.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-receiver: receiver.o
+receiver: receiver.o functions.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
