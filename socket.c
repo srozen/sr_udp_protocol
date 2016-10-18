@@ -5,6 +5,8 @@
 #include <netdb.h>
 #include "socket.h"
 
+#define FRAME_SIZE 1024
+
 
 int create_socket(struct sockaddr_in6 *source_addr, int src_port, struct sockaddr_in6 *dest_addr, int dst_port) {
     int sockfd = 0;
@@ -52,4 +54,22 @@ const char * real_address(const char *address, struct sockaddr_in6 *rval) {
         freeaddrinfo(res);
         return error;
     };
+}
+
+int wait_for_client(int sfd){
+    char msg[FRAME_SIZE];
+    struct sockaddr_in6 client;
+    socklen_t len = sizeof(client);
+    memset(&client, 0, sizeof client);
+
+    if(recvfrom(sfd, msg, FRAME_SIZE, MSG_PEEK, (struct sockaddr *)&client, &len) == -1){
+        fprintf(stderr, "Receive error occurred : %s\n", gai_strerror(errno));
+        return -1;
+    }
+
+    if(connect(sfd, (struct sockaddr*) &client, sizeof(struct sockaddr_in6)) != 0) {
+        fprintf(stderr, "Server connection to client error : %s\n", gai_strerror(errno));
+        return -1;
+    }
+    return 0;
 }

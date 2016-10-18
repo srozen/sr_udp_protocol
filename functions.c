@@ -29,14 +29,14 @@ int readArgs (int argc, char * argv[], char** address, int * port , FILE* *f, ch
         *f = fopen(file, openMode);
     }
 
-    // READARGS - DEBUG
+    /* READARGS - DEBUG
     fprintf(stderr, "Filedes  : %d\n", f!=NULL);
     fprintf(stderr, "Filenght : %d\n", (int)strlen(file));
     fprintf(stderr, "Openmode : %s\n", openMode);
     fprintf(stderr, "Filename : %s\n", file);
     fprintf(stderr, "Address  : %s\n", *address);
     fprintf(stderr, "Portno   : %d\n", *port);
-
+    */
     return 1;
 
 }
