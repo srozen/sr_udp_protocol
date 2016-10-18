@@ -1,27 +1,31 @@
-# See gcc/clang manual to understand all flags
-CFLAGS += -std=c99 # Define which version of the C standard to use
-CFLAGS += -Wall # Enable the 'all' set of warnings
-CFLAGS += -Werror # Treat all warnings as error
-CFLAGS += -Wshadow # Warn when shadowing variables
-CFLAGS += -Wextra # Enable additional warnings
-CFLAGS += -O2 -D_FORTIFY_SOURCE=2 # Add canary code, i.e. detect buffer overflows
-CFLAGS += -fstack-protector-all # Add canary code to detect stack smashing
 
-# We have no libraries to link against except libc
-LDFLAGS= -lz
+# Tuto : http://gl.developpez.com/tutoriel/outil/makefile/
+CC=gcc
 
-# Default target
-all: clean test
+CFLAGS=-std=c99 -Wall -Werror -Wshadow -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all
+LDFLAGS=-lz
+EXEC=test
+SRC= test.c packet_implem.c
+OBJ= $(SRC:.c=.o)
 
-# If we run `make debug` instead, keep the debug symbols for gdb
-# and define the DEBUG macro.
-debug: CFLAGS += -g -DDEBUG -Wno-unused-parameter
-debug: clean test
+all: $(EXEC)
 
-# We use an implicit rule: look for the files record.c/database.c,
-# compile them and link the resulting *.o's into an executable named database
-test: test.o packet_implem.o
+test: $(OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
-.PHONY: clean
+test.o: packet_interface.h 
+
+%.o: %.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+debug: clean all
+
+.PHONY: clean mrproper
 
 clean:
+	rm -rf *.o
+
+mrproper: clean
+	rm -rf $(EXEC)
+			
+
