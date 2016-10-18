@@ -1,13 +1,5 @@
 #include "packet_interface.h"
 
-/* Extra #includes */
-#include <zlib.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <memory.h>
-#include <stdio.h>
-
-
 /* Your code will be inserted here */
 
 struct __attribute__((__packed__)) pkt {
