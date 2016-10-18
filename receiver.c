@@ -2,17 +2,24 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "functions.h"
+#include "socket.h"
 
 int main(int argc, char * argv[]) {
     fprintf(stderr, "Receiver Launch : number args '%d', args '%s'\n", argc, argv[0]);
 
-    FILE* f = NULL;
-    int port = 0;
-    char * address = NULL;
+    FILE * f = NULL;
     char openMode[] = "w+";
 
+    int port = 0;
+    char * address = NULL;
+    struct sockaddr_in6 addr;
 
-    if(readArgs(argc, argv, address, &port, &f, openMode)){
+    if(readArgs(argc, argv, &address, &port, &f, openMode)){
+        const char *err = real_address(address, &addr);
+        if (err) {
+            fprintf(stderr, "Could not resolve hostname %s: %s\n", address, err);
+            return EXIT_FAILURE;
+        }
         return EXIT_SUCCESS;
     }
 

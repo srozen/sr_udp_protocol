@@ -1,4 +1,10 @@
+#include <stdio.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "socket.h"
+
 
 int create_socket(struct sockaddr_in6 *source_addr, int src_port, struct sockaddr_in6 *dest_addr, int dst_port) {
     int sockfd = 0;
