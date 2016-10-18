@@ -6,14 +6,13 @@
 int main(int argc, char * argv[]) {
     fprintf(stderr, "Receiver Launch : number args '%d', args '%s'\n", argc, argv[0]);
 
-    //int outputFile = STDOUT_FILENO;
     FILE* f = NULL;
     int port = 0;
     char * address = NULL;
     char openMode[] = "w+";
 
 
-    if(readArgs(argc, argv, address, &port, f, openMode)){
+    if(readArgs(argc, argv, address, &port, &f, openMode)){
         return EXIT_SUCCESS;
     }
 

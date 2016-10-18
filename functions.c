@@ -4,7 +4,7 @@
 #include <string.h>
 #include "functions.h"
 
-int readArgs (int argc, char * argv[], char * address, int * port , FILE* f, char * openMode){
+int readArgs (int argc, char * argv[], char * address, int * port , FILE* *f, char * openMode){
     int opt;
     char file[300];
     while ((opt = getopt(argc, argv, "f:")) != -1) {
@@ -24,16 +24,16 @@ int readArgs (int argc, char * argv[], char * address, int * port , FILE* f, cha
     *port = atoi(argv[optind+1]);
     //Open file
     if(strlen(file) != 0){
-        f = fopen(file, openMode);
+        *f = fopen(file, openMode);
     }
 
     // READARGS - DEBUG
-    fprintf(stderr, "Filedes  : %d\n", f==NULL);
+    fprintf(stderr, "Filedes  : %d\n", f!=NULL);
     fprintf(stderr, "Openmode : %s\n", openMode);
     fprintf(stderr, "Filename : %s\n", file);
     fprintf(stderr, "Address  : %s\n", address);
     fprintf(stderr, "Portno   : %d\n", *port);
 
-    exit(EXIT_SUCCESS);
+    return 1;
 
 }
