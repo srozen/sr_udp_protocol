@@ -8,18 +8,18 @@
 #include <errno.h>
 #include <string.h>
 
-int create_socket(struct sockaddr_in6 *source_addr, int src_port, struct sockaddr_in6 *dest_addr, int dst_port){
+int create_socket(struct sockaddr_in6 *source_addr, int src_port, struct sockaddr_in6 *dest_addr, int dst_port) {
     int sockfd = 0;
 
-    if((sockfd = socket(PF_INET6, SOCK_DGRAM, 0)) == -1){
+    if((sockfd = socket(PF_INET6, SOCK_DGRAM, 0)) == -1) {
         fprintf(stderr, "Socket error : %s\n", gai_strerror(errno));
         return -1;
     };
 
-    if(src_port == -1){
+    if(src_port == -1) {
         // CLIENT
         dest_addr->sin6_port = htons(dst_port);
-        if(connect(sockfd, (struct sockaddr*) dest_addr, sizeof(struct sockaddr_in6)) != 0){
+        if(connect(sockfd, (struct sockaddr*) dest_addr, sizeof(struct sockaddr_in6)) != 0) {
             fprintf(stderr, "Client connection error : %s\n", gai_strerror(errno));
             return -1;
         } else {
@@ -28,7 +28,7 @@ int create_socket(struct sockaddr_in6 *source_addr, int src_port, struct sockadd
     } else {
         // SERVER
         source_addr->sin6_port = htons(src_port);
-        if(bind(sockfd, (struct sockaddr*) source_addr, sizeof(struct sockaddr_in6)) != 0){
+        if(bind(sockfd, (struct sockaddr*) source_addr, sizeof(struct sockaddr_in6)) != 0) {
             fprintf(stderr, "Server socket error : %s\n", gai_strerror(errno));
             return -1;
         } else {
@@ -37,7 +37,7 @@ int create_socket(struct sockaddr_in6 *source_addr, int src_port, struct sockadd
     }
 }
 
-const char * real_address(const char *address, struct sockaddr_in6 *rval){
+const char * real_address(const char *address, struct sockaddr_in6 *rval) {
     struct addrinfo hints, *res;
     const char * error;
 
@@ -45,7 +45,7 @@ const char * real_address(const char *address, struct sockaddr_in6 *rval){
     hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
-    if(getaddrinfo(address, NULL, &hints, &res) == 0){
+    if(getaddrinfo(address, NULL, &hints, &res) == 0) {
         memcpy(rval, (struct sockaddr_in6 *) res->ai_addr, sizeof(*rval));
         freeaddrinfo(res);
         return NULL;

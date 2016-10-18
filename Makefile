@@ -1,10 +1,9 @@
 
 # Tuto : http://gl.developpez.com/tutoriel/outil/makefile/
 CC=gcc
-
 CFLAGS=-std=c99 -Wall -Werror -Wshadow -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all
 LDFLAGS=-lz
-EXEC=test sender
+EXEC=test sender receiver
 SRC= test.c packet_implem.c
 OBJ= $(SRC:.c=.o)
 
@@ -16,6 +15,9 @@ test: $(OBJ)
 test.o: packet_interface.h
 
 sender: sender.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+receiver: receiver.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c

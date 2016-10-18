@@ -7,7 +7,7 @@
 #include <string.h>
 #include "packet_interface.h"
 
-int main(){
+int main() {
     pkt_t* packet = pkt_new();
     int buffSize = 20;
     char * buff = malloc(sizeof(char) * buffSize);
@@ -19,8 +19,8 @@ int main(){
     pkt_set_window(packet, 2);
     pkt_set_seqnum(packet, 200);
     pkt_set_timestamp(packet, 2000);
-    pkt_set_length(packet, (uint16_t )buffSize);
-    pkt_set_payload(packet, buff, (uint16_t )buffSize);
+    pkt_set_length(packet, (uint16_t)buffSize);
+    pkt_set_payload(packet, buff, (uint16_t)buffSize);
 
     uint32_t crc = compute_crc(packet);
     pkt_set_crc(packet, crc);
