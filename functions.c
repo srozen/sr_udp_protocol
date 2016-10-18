@@ -4,9 +4,10 @@
 #include <string.h>
 #include "functions.h"
 
-int readArgs (int argc, char * argv[], char * address, int * port , FILE* *f, char * openMode){
+int readArgs (int argc, char * argv[], char** address, int * port , FILE* *f, char * openMode){
     int opt;
-    char file[300];
+    char file[50];
+    memset(file, 0, sizeof(file));
     while ((opt = getopt(argc, argv, "f:")) != -1) {
         switch (opt) {
             case 'f':
@@ -19,8 +20,9 @@ int readArgs (int argc, char * argv[], char * address, int * port , FILE* *f, ch
         }
     }
     // Assign address and port
-    address = malloc(strlen(argv[optind]));
-    memcpy(address, argv[optind], strlen(argv[optind]));
+    char* buff = argv[optind];
+    buff = argv[optind];
+    *address = buff;
     *port = atoi(argv[optind+1]);
     //Open file
     if(strlen(file) != 0){
@@ -29,9 +31,10 @@ int readArgs (int argc, char * argv[], char * address, int * port , FILE* *f, ch
 
     // READARGS - DEBUG
     fprintf(stderr, "Filedes  : %d\n", f!=NULL);
+    fprintf(stderr, "Filenght : %d\n", (int)strlen(file));
     fprintf(stderr, "Openmode : %s\n", openMode);
     fprintf(stderr, "Filename : %s\n", file);
-    fprintf(stderr, "Address  : %s\n", address);
+    fprintf(stderr, "Address  : %s\n", *address);
     fprintf(stderr, "Portno   : %d\n", *port);
 
     return 1;
