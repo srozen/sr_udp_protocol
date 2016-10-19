@@ -17,7 +17,7 @@ struct __attribute__((__packed__)) pkt {
 /* Extra code */
 uint32_t compute_crc(const pkt_t *pkt) {
     uLong crc = crc32(0L, Z_NULL, 0);
-    if (pkt->header.length > 0) {
+    if(pkt->header.length > 0) {
         crc = crc32(crc, (Bytef *) pkt, sizeof(pkt->header));
         crc = crc32(crc, (Bytef *) pkt->payload, sizeof(char) * pkt_get_length(pkt));
     } else {
@@ -30,7 +30,7 @@ uint32_t compute_crc(const pkt_t *pkt) {
 
 pkt_t *pkt_new() {
     struct pkt *packet;
-    if ((packet = malloc(sizeof(struct pkt))) == NULL) {
+    if((packet = malloc(sizeof(struct pkt))) == NULL) {
         return NULL;
     }
     packet->header.length = 0;
@@ -43,7 +43,7 @@ pkt_t *pkt_new() {
 }
 
 void pkt_del(pkt_t *pkt) {
-    if (pkt->header.length == 0) {
+    if(pkt->header.length == 0) {
         free(pkt->payload);
     }
     free(pkt);
@@ -51,7 +51,7 @@ void pkt_del(pkt_t *pkt) {
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
 
-    if (len <= sizeof(pkt->header)){
+    if(len <= sizeof(pkt->header)) {
         return E_NOHEADER;
     }
 
@@ -65,16 +65,16 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
     readBytes += sizeof(pkt->crc) / sizeof(char);
 
     fprintf(stderr, "Read Bytes %d\n", (int) readBytes);
-    if (readBytes > len) {
+    if(readBytes > len) {
         return E_NOMEM;
     }
-    if (pkt_get_crc(pkt) != compute_crc(pkt)) {
+    if(pkt_get_crc(pkt) != compute_crc(pkt)) {
         return E_CRC;
     }
-    if (pkt_get_type(pkt) != PTYPE_ACK && pkt_get_type(pkt) != PTYPE_DATA) {
+    if(pkt_get_type(pkt) != PTYPE_ACK && pkt_get_type(pkt) != PTYPE_DATA) {
         return E_TYPE;
     }
-    if (pkt_get_length(pkt) > MAX_PAYLOAD_SIZE) {
+    if(pkt_get_length(pkt) > MAX_PAYLOAD_SIZE) {
         return E_LENGTH;
     }
     return PKT_OK;
@@ -91,11 +91,11 @@ pkt_status_code pkt_encode(const pkt_t *pkt, char *buf, size_t *len) {
     writtenBytes += sizeof(pkt->crc) / sizeof(char);
     memcpy(len, &writtenBytes, sizeof(writtenBytes));
 
-    if (&writtenBytes > len) {
+    if(&writtenBytes > len) {
         return E_NOMEM;
     }
 
-    fprintf(stderr, "Written Bytes %d\n", (int) (writtenBytes));
+    fprintf(stderr, "Written Bytes %d\n", (int)(writtenBytes));
 
     return PKT_OK;
 }
@@ -125,7 +125,7 @@ uint32_t pkt_get_crc(const pkt_t *pkt) {
 }
 
 const char *pkt_get_payload(const pkt_t *pkt) {
-    if (pkt->header.length == 0) {
+    if(pkt->header.length == 0) {
         return NULL;
     }
     return pkt->payload;
@@ -133,7 +133,7 @@ const char *pkt_get_payload(const pkt_t *pkt) {
 
 
 pkt_status_code pkt_set_type(pkt_t *pkt, const ptypes_t type) {
-    if ((type != PTYPE_ACK) && (type != PTYPE_DATA)) {
+    if((type != PTYPE_ACK) && (type != PTYPE_DATA)) {
         return E_TYPE;
     }
     pkt->header.type = type;
@@ -142,7 +142,7 @@ pkt_status_code pkt_set_type(pkt_t *pkt, const ptypes_t type) {
 }
 
 pkt_status_code pkt_set_window(pkt_t *pkt, const uint8_t window) {
-    if ((window > MAX_WINDOW_SIZE)) {
+    if((window > MAX_WINDOW_SIZE)) {
         return E_WINDOW;
     }
     pkt->header.window = window;
@@ -155,7 +155,7 @@ pkt_status_code pkt_set_seqnum(pkt_t *pkt, const uint8_t seqnum) {
 }
 
 pkt_status_code pkt_set_length(pkt_t *pkt, const uint16_t length) {
-    if(length > MAX_PAYLOAD_SIZE){
+    if(length > MAX_PAYLOAD_SIZE) {
         return E_LENGTH;
     }
     pkt->header.length = htons(length);
@@ -173,7 +173,7 @@ pkt_status_code pkt_set_crc(pkt_t *pkt, const uint32_t crc) {
 }
 
 pkt_status_code pkt_set_payload(pkt_t *pkt, const char *data, const uint16_t length) {
-    if (pkt_set_length(pkt, length) != PKT_OK) {
+    if(pkt_set_length(pkt, length) != PKT_OK) {
         return E_LENGTH;
     }
     char *payload = malloc(sizeof(char) * length);

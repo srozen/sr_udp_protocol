@@ -56,13 +56,13 @@ const char * real_address(const char *address, struct sockaddr_in6 *rval) {
     };
 }
 
-int wait_for_client(int sfd){
+int wait_for_client(int sfd) {
     char msg[FRAME_SIZE];
     struct sockaddr_in6 client;
     socklen_t len = sizeof(client);
     memset(&client, 0, sizeof client);
 
-    if(recvfrom(sfd, msg, FRAME_SIZE, MSG_PEEK, (struct sockaddr *)&client, &len) == -1){
+    if(recvfrom(sfd, msg, FRAME_SIZE, MSG_PEEK, (struct sockaddr *)&client, &len) == -1) {
         fprintf(stderr, "Receive error occurred : %s\n", gai_strerror(errno));
         return -1;
     }
