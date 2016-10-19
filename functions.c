@@ -11,13 +11,12 @@ int readArgs(int argc, char * argv[], char** address, int * port, FILE** f, char
             break;
         default:
             fprintf(stderr, "Usage:\n"
-                    "-s FILE Specify a file to send as data, or to store data in it.\n");
+                    "-f FILE Specify a file to send as data, or to store data in it.\n");
             exit(EXIT_FAILURE);
         }
     }
     // Assign address and port
     char* buff = argv[optind];
-    buff = argv[optind];
     *address = buff;
     *port = atoi(argv[optind + 1]);
     //Open file
