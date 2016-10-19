@@ -14,7 +14,7 @@ int main(int argc, char * argv[]) {
     char * address = NULL;
     struct sockaddr_in6 addr;
 
-    if(readArgs(argc, argv, &address, &port, &f, openMode)) {
+    if(!readArgs(argc, argv, &address, &port, &f, openMode)) {
         return EXIT_FAILURE;
     }
 
