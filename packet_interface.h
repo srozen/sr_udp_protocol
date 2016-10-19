@@ -110,6 +110,10 @@ pkt_status_code pkt_set_crc(pkt_t*, const uint32_t crc);
  * @POST: pkt_get_length(pkt) == length */
 pkt_status_code pkt_set_payload(pkt_t*, const char *data, const uint16_t length);
 
+/* Increment the seqnum for the sender.
+ * If the seqnum reached 255, it must be reset to 0 for the next packet.
+ */
+void increment_seqnum(uint8_t * seqnum);
 
 #endif  /* __PACKET_INTERFACE_H_ */
 

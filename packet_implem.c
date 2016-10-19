@@ -95,7 +95,7 @@ pkt_status_code pkt_encode(const pkt_t *pkt, char *buf, size_t *len) {
         return E_NOMEM;
     }
 
-    fprintf(stderr, "Written Bytes %d\n", (int)(writtenBytes));
+    // TODO REMOVE fprintf(stderr, "Written Bytes %d\n", (int)(writtenBytes));
 
     return PKT_OK;
 }
@@ -177,8 +177,17 @@ pkt_status_code pkt_set_payload(pkt_t *pkt, const char *data, const uint16_t len
         return E_LENGTH;
     }
     char *payload = malloc(sizeof(char) * length);
+    memset(payload, 0, length);
     memcpy(payload, data, sizeof(char) * length);
     pkt->payload = payload;
     return PKT_OK;
+}
+
+void increment_seqnum(uint8_t * seqnum){
+    if(*seqnum == 255){
+        *seqnum = 0;
+    } else {
+        *seqnum += 1;
+    }
 }
 
