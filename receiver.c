@@ -1,4 +1,5 @@
 #include "receiver.h"
+#include "packet_debug.h"
 
 int main(int argc, char * argv[]) {
     fprintf(stderr, "Receiver Launch : number args '%d'\n", argc);
@@ -40,6 +41,7 @@ int main(int argc, char * argv[]) {
     /*
      * Messages exchange
      */
+    reading_loop(sfd, f);
     close(sfd);
     fprintf(stderr, "Exiting with success! (Receiver)\n");
     return EXIT_SUCCESS;
@@ -75,8 +77,8 @@ void reading_loop(int sfd, FILE * outFile) {
 
             pkt_decode(bufRe, nbByteR, pktRe);
             ssize_t nbByteW = write(fileno(outFile), pkt_get_payload(pktRe), pkt_get_length(pktRe));
-
-            fprintf(stderr, "Write in file, nb wrotte bytes : %d", (int) nbByteW);
+            pkt_debug(pktRe);
+            fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
         }
 
     }
