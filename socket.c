@@ -39,21 +39,21 @@ int create_socket(struct sockaddr_in6 *source_addr, int src_port, struct sockadd
 
 const char * real_address(const char *address, struct sockaddr_in6 *rval) {
     struct addrinfo hints, *res;
-    const char * error;
-
-    memset(&hints, 0, sizeof hints);
+    int errcode;
+    memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET6;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_protocol = IPPROTO_UDP;
-    if(getaddrinfo(address, NULL, &hints, &res) == 0) {
-        memcpy(rval, (struct sockaddr_in6 *) res->ai_addr, sizeof(*rval));
-        freeaddrinfo(res);
-        return NULL;
-    } else {
-        error = gai_strerror(errno);
-        freeaddrinfo(res);
-        return error;
-    };
+    errcode = getaddrinfo(address, NULL, &hints, &res);
+
+    if(errcode != 0) {
+        return "Getaddrinfo fail";
+    }
+    if(res->ai_family != AF_INET6) {
+        return "Not ipv6 address";
+    }
+
+    memcpy(rval, res->ai_addr, res->ai_addrlen);
+    freeaddrinfo(res);
+    return NULL;
 }
 
 int wait_for_client(int sfd) {

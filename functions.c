@@ -1,6 +1,6 @@
 #include "functions.h"
 
-int readArgs(int argc, char * argv[], char** address, int * port, FILE** f, char * openMode) {
+int read_args(int argc, char * argv[], char** address, int * port, FILE** f, char * openMode) {
     int opt;
     char * file = NULL;
     while((opt = getopt(argc, argv, "f:")) != -1) {
