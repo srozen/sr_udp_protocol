@@ -50,10 +50,6 @@ int main(int argc, char * argv[]) {
 void reading_loop(int sfd, FILE * outFile) {
     fprintf(stderr, "Begin loop to read socket\n");
 
-    pkt_t * pktRe = pkt_new();
-    int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe);
-    char bufRe[sizeMaxPkt];
-
     int outfd = fileno(outFile);
     int ret = 0;
     fd_set selSo;
@@ -63,7 +59,7 @@ void reading_loop(int sfd, FILE * outFile) {
         FD_ZERO(&selSo);
 
         FD_SET(sfd, &selSo);
-        //FD_SET(outFile, &selSo);
+        FD_SET(outfd, &selSo);
 
         if((ret = select(sfd + 1, &selSo, NULL, NULL, NULL)) < 0) {
             fprintf(stderr, "Reading_loop : Select error\n");
@@ -73,39 +69,45 @@ void reading_loop(int sfd, FILE * outFile) {
         // LOOK  in socket
         if(FD_ISSET(sfd, &selSo)) {
 
+            pkt_t * pktRe = pkt_new();
+            int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe);
+            char bufRe[sizeMaxPkt];
+
             ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
             int validPkt = pkt_decode(bufRe, nbByteR, pktRe);
 
-            if (validPkt == PKT_OK){
+            if(validPkt == PKT_OK) {
                 send_ack(sfd, pkt_get_seqnum(pktRe));
-
                 ssize_t nbByteW = write(outfd, pkt_get_payload(pktRe), pkt_get_length(pktRe));
+
                 pkt_debug(pktRe);
                 fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
             } else {
-                fprintf(stderr, "Packet not valid, error code : %d", validPkt);
+                fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
             }
         }
     }
 }
 
-void send_ack(const int sfd, uint8_t seqnum){
+void send_ack(const int sfd, uint8_t seqnum) {
     pkt_t * pktAck = pkt_new();
 
     pkt_set_seqnum(pktAck, seqnum);
-    pkt_set_type(pktAck,PTYPE_ACK);
+    pkt_set_type(pktAck, PTYPE_ACK);
     // TODO add window ??
     size_t lenBuf = sizeof(pktAck);
 
-    char bufEnc[lenBuf];
+    char * bufEnc = malloc(lenBuf);
 
-    int statusEnc = pkt_encode(pktAck, bufEnc,&lenBuf);
+    int statusEnc = pkt_encode(pktAck, bufEnc, &lenBuf);
 
-    if (statusEnc == PKT_OK){
+    if(statusEnc == PKT_OK) {
         int nbByteAck = write(sfd, bufEnc, lenBuf);
-        fprintf(stderr, "Ack send, number byte write : %d", nbByteAck);
+        fprintf(stderr, "Ack send, number byte write : %d\n", nbByteAck);
     } else {
-        fprintf(stderr, "Error encoding ack, number error : %d", statusEnc);
+        fprintf(stderr, "Error encoding ack, number error : %d\n", statusEnc);
     }
+
+    free(bufEnc);
     pkt_del(pktAck);
 }
