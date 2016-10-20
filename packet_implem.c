@@ -187,3 +187,7 @@ void increment_seqnum(uint8_t * seqnum){
     }
 }
 
+uint32_t timestamp(){
+    return (uint32_t)time(NULL);
+}
+

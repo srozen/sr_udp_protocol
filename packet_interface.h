@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <memory.h>
 #include <stdio.h>
+#include <time.h>
 
 /* Raccourci pour struct pkt */
 typedef struct pkt pkt_t;
@@ -117,6 +118,11 @@ pkt_status_code pkt_set_payload(pkt_t*, const char *data, const uint16_t length)
  * If the seqnum reached 255, it must be reset to 0 for the next packet.
  */
 void increment_seqnum(uint8_t * seqnum);
+
+/*
+ * Return a timestamp from system time
+ */
+uint32_t timestamp();
 
 #endif  /* __PACKET_INTERFACE_H_ */
 

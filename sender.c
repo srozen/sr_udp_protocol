@@ -1,3 +1,4 @@
+#include <time.h>
 #include "sender.h"
 #include "packet_debug.h"
 
@@ -66,6 +67,7 @@ void writing_loop(const int sfd, FILE * inFile) {
             pkt_set_seqnum(pktWr, seqnum);
             pkt_set_type(pktWr, PTYPE_DATA);
             pkt_set_window(pktWr, winSize);
+            pkt_set_timestamp(pktWr, timestamp());
             pkt_encode(pktWr, socketWriteBuf, &sizeMaxPkt);
 
             nbByteWr = write(sfd, socketWriteBuf, sizeMaxPkt);
