@@ -100,6 +100,9 @@ void reading_loop(int sfd, FILE * outFile) {
             pkt_del(bufPkt[indWinRe]);
             bufPkt[indWinRe] = NULL;
             indWinRe++;
+            if (indWinRe > MAX_WINDOW_SIZE){
+                indWinRe =0 ;
+            }
             winFree++;
         }
     }
