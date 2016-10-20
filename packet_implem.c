@@ -58,11 +58,11 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
     size_t readBytes = 0;
 
     memcpy(&pkt->header, data, sizeof(pkt->header));
-    readBytes += sizeof(pkt->header) / sizeof(char);
+    readBytes += sizeof(pkt->header);
     pkt_set_payload(pkt, data + readBytes, pkt_get_length(pkt));
-    readBytes += sizeof(char) * pkt_get_length(pkt);
+    readBytes += pkt_get_length(pkt);
     memcpy(&pkt->crc, data + readBytes, sizeof(pkt->crc));
-    readBytes += sizeof(pkt->crc) / sizeof(char);
+    readBytes += sizeof(pkt->crc);
 
     if(readBytes > len) {
         return E_NOMEM;
@@ -185,5 +185,9 @@ void increment_seqnum(uint8_t * seqnum){
     } else {
         *seqnum += 1;
     }
+}
+
+uint32_t timestamp(){
+    return (uint32_t)time(NULL);
 }
 

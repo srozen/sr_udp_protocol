@@ -51,7 +51,8 @@ void reading_loop(int sfd, FILE * outFile) {
 
     int indWinRe = 0;
 
-    int sizeMaxPkt = MAX_PAYLOAD_SIZE + 16;
+    int sizeMaxPkt = MAX_PAYLOAD_SIZE + 12;
+
     char bufRe[sizeMaxPkt];
 
     int outfd = fileno(outFile);
