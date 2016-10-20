@@ -96,7 +96,7 @@ void reading_loop(int sfd, FILE * outFile) {
 
             if(pkt_get_length(bufPkt[indWinRe]) > 0) {
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
-                //fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+                fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
             } else { // End of file receive
                 eof = 1;
             }
@@ -127,7 +127,7 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
 
     if(statusEnc == PKT_OK) {
         int nbByteAck = write(sfd, bufEnc, lenBuf);
-        //fprintf(stderr, "Ack send, number byte write : %d\n", nbByteAck);
+        fprintf(stderr, "Ack send, number byte write : %d\n", nbByteAck);
     } else {
         fprintf(stderr, "Error encoding ack, number error : %d\n", statusEnc);
     }

@@ -34,7 +34,7 @@ int main(int argc, char * argv[]) {
 void writing_loop(const int sfd, FILE * inFile) {
     pkt_t * pktWr = pkt_new();
     pkt_t * pktRe = pkt_new();
-    size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktWr) + 4;
+    const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktWr) + 4;
 
     char fileReadBuf[MAX_PAYLOAD_SIZE];
     char socketReadBuf[sizeMaxPkt];
@@ -59,7 +59,7 @@ void writing_loop(const int sfd, FILE * inFile) {
             break;
         }
 
-        if(winSize != 0){
+        if(winSize > 0){
             if(FD_ISSET(fileno(inFile), &selSo)){
 
                 nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
@@ -70,13 +70,18 @@ void writing_loop(const int sfd, FILE * inFile) {
                 pkt_set_type(pktWr, PTYPE_DATA);
                 pkt_set_window(pktWr, winSize);
                 pkt_set_timestamp(pktWr, timestamp());
-                pkt_encode(pktWr, socketWriteBuf, &sizeMaxPkt);
+
+                size_t tmp = sizeMaxPkt;
+
+                pkt_encode(pktWr, socketWriteBuf, &tmp);
+                // TODO verify encode
 
                 nbByteWr = write(sfd, socketWriteBuf, sizeMaxPkt);
                 if(nbByteWr != (int)nbByteRe + (int)sizeof(pktWr) + (int)sizeof(pkt_get_crc(pktWr))) // total size
                     fprintf(stderr, "Error occured on write from stdin\n");
                 if(nbByteRe == 0){
-                    eof = 1;
+                    // TODO wait for ack
+                    eof = 0;
                 }
                 winSize--;
                 increment_seqnum(&seqnum);
