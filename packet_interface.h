@@ -22,6 +22,9 @@ typedef enum {
 #define MAX_PAYLOAD_SIZE 512
 /* Taille maximale de Window */
 #define MAX_WINDOW_SIZE 31
+/* Taille maximale du numéro de séquence */
+#define MAX_SEQNUM 255
+
 uint32_t  compute_crc(const pkt_t *pkt);
 
 /* Valeur de retours des fonctions */

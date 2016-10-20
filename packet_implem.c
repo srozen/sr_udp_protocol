@@ -184,7 +184,7 @@ pkt_status_code pkt_set_payload(pkt_t *pkt, const char *data, const uint16_t len
 }
 
 void increment_seqnum(uint8_t * seqnum){
-    if(*seqnum == 255){
+    if(*seqnum == MAX_SEQNUM){
         *seqnum = 0;
     } else {
         *seqnum += 1;
