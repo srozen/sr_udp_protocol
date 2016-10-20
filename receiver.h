@@ -13,6 +13,6 @@
 
 void reading_loop(const int sfd, FILE * outFile);
 
-void send_ack(const int sfd, uint8_t seqnum, uint8_t window);
+void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp);
 
 #endif // RECEIVER_H_INCLUDED
