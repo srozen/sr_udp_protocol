@@ -84,19 +84,23 @@ void reading_loop(int sfd, FILE * outFile) {
                 bufPkt[pkt_get_seqnum(pktRe) % (MAX_WINDOW_SIZE + 1)] = pktRe;
                 winFree--;
                 // Verify window
-                send_ack(sfd, pkt_get_seqnum(pktRe) + 1, winFree);
+                send_ack(sfd, pkt_get_seqnum(pktRe) + 1, winFree,pkt_get_timestamp(pktRe));
             } else {
                 pkt_del(pktRe);
                 fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
             }
         }
+
+        // IF next pkt can be write
         if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % (MAX_WINDOW_SIZE + 1))) == indWinRe) {
+
             if(pkt_get_length(bufPkt[indWinRe]) > 0) {
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
                 fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
             } else { // End of file receive
                 eof = 1;
             }
+
             pkt_del(bufPkt[indWinRe]);
             bufPkt[indWinRe] = NULL;
             indWinRe++;
@@ -108,12 +112,13 @@ void reading_loop(int sfd, FILE * outFile) {
     }
 }
 
-void send_ack(const int sfd, uint8_t seqnum, uint8_t window) {
+void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp) {
     pkt_t * pktAck = pkt_new();
 
     pkt_set_seqnum(pktAck, seqnum);
     pkt_set_type(pktAck, PTYPE_ACK);
     pkt_set_window(pktAck,window);
+    pkt_set_timestamp(pktAck,timestamp);
     // TODO add window ??
 
     size_t lenBuf = sizeof(pktAck);
