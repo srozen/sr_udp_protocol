@@ -34,7 +34,7 @@ int main(int argc, char * argv[]) {
 void writing_loop(const int sfd, FILE * inFile) {
     pkt_t * pktWr = pkt_new();
     pkt_t * pktRe = pkt_new();
-    size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktWr);
+    size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktWr) + 4;
 
     char fileReadBuf[MAX_PAYLOAD_SIZE];
     char socketReadBuf[sizeMaxPkt];

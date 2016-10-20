@@ -48,7 +48,7 @@ void reading_loop(int sfd, FILE * outFile) {
 
     // init variable
     pkt_t * pktRe = pkt_new();
-    int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe);
+    int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe) + 4;
     char bufRe[sizeMaxPkt];
 
     int outfd = fileno(outFile);
