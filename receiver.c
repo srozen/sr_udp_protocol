@@ -49,7 +49,7 @@ void reading_loop(int sfd, FILE * outFile) {
     // init variable
     pkt_t * bufPkt[MAX_WINDOW_SIZE];
 
-    int indWinRe = 0;
+    //int indWinRe = 0;
 
     int sizeMaxPkt = MAX_PAYLOAD_SIZE + 12;
 

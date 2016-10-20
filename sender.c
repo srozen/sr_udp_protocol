@@ -59,29 +59,54 @@ void writing_loop(const int sfd, FILE * inFile) {
             break;
         }
 
+    // DUP
+        nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
+
+        // Packet initialization + encode
+        pkt_set_payload(pktWr, fileReadBuf, nbByteRe);
+        pkt_set_seqnum(pktWr, seqnum);
+        pkt_set_type(pktWr, PTYPE_DATA);
+        pkt_set_window(pktWr, winSize);
+        pkt_set_timestamp(pktWr, timestamp());
+        pkt_encode(pktWr, socketWriteBuf, &sizeMaxPkt);
+
+        nbByteWr = write(sfd, socketWriteBuf, sizeMaxPkt);
+        if(nbByteWr != (int)nbByteRe + (int)sizeof(pktWr) + (int)sizeof(pkt_get_crc(pktWr))) // total size
+            fprintf(stderr, "Error occured on write from stdin\n");
+        if(nbByteRe == 0){
+            eof = 1;
+        }
+        winSize--;
+        increment_seqnum(&seqnum);
+    // DUP
+
         if(FD_ISSET(fileno(inFile), &selSo)){
-            nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
+            if(winSize != 0){
+                nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
 
-            // Packet initialization + encode
-            pkt_set_payload(pktWr, fileReadBuf, nbByteRe);
-            pkt_set_seqnum(pktWr, seqnum);
-            pkt_set_type(pktWr, PTYPE_DATA);
-            pkt_set_window(pktWr, winSize);
-            pkt_set_timestamp(pktWr, timestamp());
-            pkt_encode(pktWr, socketWriteBuf, &sizeMaxPkt);
+                // Packet initialization + encode
+                pkt_set_payload(pktWr, fileReadBuf, nbByteRe);
+                pkt_set_seqnum(pktWr, seqnum);
+                pkt_set_type(pktWr, PTYPE_DATA);
+                pkt_set_window(pktWr, winSize);
+                pkt_set_timestamp(pktWr, timestamp());
+                pkt_encode(pktWr, socketWriteBuf, &sizeMaxPkt);
 
-            nbByteWr = write(sfd, socketWriteBuf, sizeMaxPkt);
-            if(nbByteWr != (int)nbByteRe + (int)sizeof(pktWr) + (int)sizeof(pkt_get_crc(pktWr))) // total size
-                fprintf(stderr, "Error occured on write from stdin\n");
-            if(nbByteRe == 0){
-                eof = 1;
+                nbByteWr = write(sfd, socketWriteBuf, sizeMaxPkt);
+                if(nbByteWr != (int)nbByteRe + (int)sizeof(pktWr) + (int)sizeof(pkt_get_crc(pktWr))) // total size
+                    fprintf(stderr, "Error occured on write from stdin\n");
+                if(nbByteRe == 0){
+                    eof = 1;
+                }
+                winSize--;
+                increment_seqnum(&seqnum);
             }
-            increment_seqnum(&seqnum);
         }
 
         if(FD_ISSET(sfd, &selSo)){
             nbByteRe = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
             pkt_decode(socketReadBuf, nbByteRe, pktRe); // Create new packet from buffer
+            winSize = pkt_get_window(pktRe);
             pkt_debug(pktRe); // Debug ACK
         }
 
