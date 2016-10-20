@@ -80,7 +80,7 @@ void writing_loop(const int sfd, FILE * inFile) {
         if(FD_ISSET(fileno(inFile), &selSo)){
             nbByteRe = read(fileno(inFile), bufRe, MAX_PAYLOAD_SIZE);
 
-            // Packet initialization
+            // Packet initialization + encode
             pkt_set_payload(pktWr,bufRe, nbByteRe);
             pkt_set_seqnum(pktWr, seqnum);
             pkt_set_type(pktWr, PTYPE_DATA);
@@ -90,18 +90,16 @@ void writing_loop(const int sfd, FILE * inFile) {
             nbByteWr = write(sfd, bufWr, sizeMaxPkt);
             if(nbByteWr != (int)nbByteRe + (int)sizeof(pktWr) + (int)sizeof(pkt_get_crc(pktWr))) // total size
                 fprintf(stderr, "Error occured on write from stdin\n");
-            if(nbByteWr == 0){
+            if(nbByteRe == 0){
                 eof = 1;
             }
-            fprintf(stderr, "nb byte Send %d\n", (int)nbByteWr);
-            fprintf(stderr, "nb byte Read %d\n", (int)nbByteRe);
             increment_seqnum(&seqnum);
         }
 
         if(FD_ISSET(sfd, &selSo)){
             nbByteRe = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
             pkt_decode(socketReadBuf, nbByteRe, pktRe); // Create new packet from buffer
-            pkt_debug(pktRe);
+            pkt_debug(pktRe); // Debug ACK
         }
 
     }

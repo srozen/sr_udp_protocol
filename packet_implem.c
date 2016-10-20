@@ -64,7 +64,6 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
     memcpy(&pkt->crc, data + readBytes, sizeof(pkt->crc));
     readBytes += sizeof(pkt->crc) / sizeof(char);
 
-    fprintf(stderr, "Read Bytes %d\n", (int) readBytes);
     if(readBytes > len) {
         return E_NOMEM;
     }
@@ -94,9 +93,6 @@ pkt_status_code pkt_encode(const pkt_t *pkt, char *buf, size_t *len) {
     if(&writtenBytes > len) {
         return E_NOMEM;
     }
-
-    // TODO REMOVE fprintf(stderr, "Written Bytes %d\n", (int)(writtenBytes));
-
     return PKT_OK;
 }
 
