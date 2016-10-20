@@ -1,4 +1,5 @@
 #include "sender.h"
+#include "packet_debug.h"
 
 int main(int argc, char * argv[]) {
     fprintf(stderr, "Sender Launch : number args '%d'\n", argc);
@@ -40,14 +41,22 @@ void writing_loop(const int sfd, FILE * inFile) {
 
     fprintf(stderr, "Begin loop to write in socket\n");
 
+    // Send
     pkt_t * pktWr = pkt_new();
     size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktWr);
+
+    // Receive
+    pkt_t * pktRe = pkt_new();
 
     char bufWr[sizeMaxPkt];
     char bufRe[MAX_PAYLOAD_SIZE];
 
+    char socketReadBuf[sizeMaxPkt];
+    //char fileWriteBuf[MAX_PAYLOAD_SIZE];
+
     // Packets relevant variables
     uint8_t seqnum = 0; //First seqnum must be 0
+    uint8_t winSize = 1;
 
     // TODO in loop depending the file and wait ack
 
@@ -74,6 +83,8 @@ void writing_loop(const int sfd, FILE * inFile) {
             // Packet initialization
             pkt_set_payload(pktWr,bufRe, nbByteRe);
             pkt_set_seqnum(pktWr, seqnum);
+            pkt_set_type(pktWr, PTYPE_DATA);
+            pkt_set_window(pktWr, winSize);
             pkt_encode(pktWr, bufWr, &sizeMaxPkt);
 
             nbByteWr = write(sfd, bufWr, sizeMaxPkt);
@@ -87,31 +98,11 @@ void writing_loop(const int sfd, FILE * inFile) {
             increment_seqnum(&seqnum);
         }
 
+        if(FD_ISSET(sfd, &selSo)){
+            nbByteRe = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
+            pkt_decode(socketReadBuf, nbByteRe, pktRe); // Create new packet from buffer
+            pkt_debug(pktRe);
+        }
+
     }
-    /*
-    while(1) {
-
-        FD_ZERO(&selSo);
-
-        FD_SET(sfd, &selSo);
-        //FD_SET(outFile, &selSo);
-
-        if((ret = select(sfd + 1, &selSo, NULL, NULL, NULL)) < 0) {
-            fprintf(stderr, "Reading_loop : Select error\n");
-            break;
-        }
-
-        // LOOK  in socket
-        if(FD_ISSET(sfd, &selSo)) {
-
-            ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
-
-            pkt_decode(bufRe, nbByteR, pktRe);
-            ssize_t nbByteW = write(fileno(outFile), pkt_get_payload(pktRe), pkt_get_length(pktRe));
-
-            fprintf(stderr, "Write in file, nb wrotte bytes : %d", (int) nbByteW);
-        }
-
-    } */
-
 }
