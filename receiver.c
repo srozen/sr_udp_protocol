@@ -1,5 +1,4 @@
 #include "receiver.h"
-#include "packet_debug.h"
 
 int main(int argc, char * argv[]) {
     fprintf(stderr, "Receiver Launch : number args '%d'\n", argc);
@@ -24,7 +23,6 @@ int main(int argc, char * argv[]) {
     }
 
     // Socket creation
-    /* Get a socket */
     int sfd;
     sfd = create_socket(&addr, port, NULL, -1); /* Bound */
     if(sfd > 0 && wait_for_client(sfd) < 0) {  /* Connected */
@@ -37,11 +35,9 @@ int main(int argc, char * argv[]) {
         return EXIT_FAILURE;
     }
 
-    // TODO
-    /*
-     * Messages exchange
-     */
+    // Enter in reading loop
     reading_loop(sfd, outFile);
+
     close(sfd);
     fprintf(stderr, "Exiting with success! (Receiver)\n");
     return EXIT_SUCCESS;
@@ -50,38 +46,45 @@ int main(int argc, char * argv[]) {
 void reading_loop(int sfd, FILE * outFile) {
     fprintf(stderr, "Begin loop to read socket\n");
 
+    // init variable
+    pkt_t * pktRe = pkt_new();
+    int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe);
+    char bufRe[sizeMaxPkt];
+
     int outfd = fileno(outFile);
-    int ret = 0;
+    int eof = 0;
     fd_set selSo;
 
-    while(1) {
+    while(!eof) {
 
         FD_ZERO(&selSo);
 
         FD_SET(sfd, &selSo);
         FD_SET(outfd, &selSo);
 
-        if((ret = select(sfd + 1, &selSo, NULL, NULL, NULL)) < 0) {
+        if((select(sfd + 1, &selSo, NULL, NULL, NULL)) < 0) {
             fprintf(stderr, "Reading_loop : Select error\n");
             break;
         }
 
-        // LOOK  in socket
+        // Look in socket
         if(FD_ISSET(sfd, &selSo)) {
-
-            pkt_t * pktRe = pkt_new();
-            int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe);
-            char bufRe[sizeMaxPkt];
 
             ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
             int validPkt = pkt_decode(bufRe, nbByteR, pktRe);
 
-            if(validPkt == PKT_OK) {
-                send_ack(sfd, pkt_get_seqnum(pktRe));
-                ssize_t nbByteW = write(outfd, pkt_get_payload(pktRe), pkt_get_length(pktRe));
-
+            if(validPkt == PKT_OK) { // Verify the integrity of pkt
                 pkt_debug(pktRe);
-                fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+                send_ack(sfd, pkt_get_seqnum(pktRe));
+
+                if(pkt_get_length(pktRe) > 0) {
+                    ssize_t nbByteW = write(outfd, pkt_get_payload(pktRe), pkt_get_length(pktRe));
+
+                    fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+
+                } else { // End of file receive
+                    eof = 1;
+                }
             } else {
                 fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
             }
@@ -95,10 +98,9 @@ void send_ack(const int sfd, uint8_t seqnum) {
     pkt_set_seqnum(pktAck, seqnum);
     pkt_set_type(pktAck, PTYPE_ACK);
     // TODO add window ??
+
     size_t lenBuf = sizeof(pktAck);
-
     char * bufEnc = malloc(lenBuf);
-
     int statusEnc = pkt_encode(pktAck, bufEnc, &lenBuf);
 
     if(statusEnc == PKT_OK) {

@@ -9,6 +9,7 @@
 #include "functions.h"
 #include "socket.h"
 #include "packet_interface.h"
+#include "packet_debug.h"
 
 void reading_loop(const int sfd, FILE * outFile);
 
