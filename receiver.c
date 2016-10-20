@@ -47,8 +47,11 @@ void reading_loop(int sfd, FILE * outFile) {
     fprintf(stderr, "Begin loop to read socket\n");
 
     // init variable
-    pkt_t * pktRe = pkt_new();
-    int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe);
+    pkt_t * bufPkt[MAX_WINDOW_SIZE];
+
+    int indWinRe = 0;
+
+    int sizeMaxPkt = MAX_PAYLOAD_SIZE + 16;
     char bufRe[sizeMaxPkt];
 
     int outfd = fileno(outFile);
@@ -69,14 +72,17 @@ void reading_loop(int sfd, FILE * outFile) {
 
         // Look in socket
         if(FD_ISSET(sfd, &selSo)) {
-
+            pkt_t * pktRe = pkt_new();
             ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
             int validPkt = pkt_decode(bufRe, nbByteR, pktRe);
 
             if(validPkt == PKT_OK) { // Verify the integrity of pkt
                 pkt_debug(pktRe);
-                send_ack(sfd, pkt_get_seqnum(pktRe));
-
+                // Verify window
+                send_ack(sfd, pkt_get_seqnum(pktRe)+1);
+                // put in buf windows
+                bufPkt[pkt_get_seqnum(pktRe)%MAX_WINDOW_SIZE] = pktRe;
+                /*
                 if(pkt_get_length(pktRe) > 0) {
                     ssize_t nbByteW = write(outfd, pkt_get_payload(pktRe), pkt_get_length(pktRe));
 
@@ -84,11 +90,13 @@ void reading_loop(int sfd, FILE * outFile) {
 
                 } else { // End of file receive
                     eof = 1;
-                }
+                } */
             } else {
+                pkt_del(pktRe);
                 fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
             }
         }
+        //if ()
     }
 }
 
