@@ -50,6 +50,7 @@ void reading_loop(int sfd, FILE * outFile) {
     pkt_t * bufPkt[MAX_WINDOW_SIZE];
 
     int indWinRe = 0;
+    int winFree = MAX_WINDOW_SIZE;
 
     int sizeMaxPkt = MAX_PAYLOAD_SIZE + 12;
 
@@ -79,33 +80,37 @@ void reading_loop(int sfd, FILE * outFile) {
 
             if(validPkt == PKT_OK) { // Verify the integrity of pkt
                 pkt_debug(pktRe);
-                // Verify window
-                send_ack(sfd, pkt_get_seqnum(pktRe)+1);
                 // put in buf windows
-                bufPkt[pkt_get_seqnum(pktRe)%MAX_WINDOW_SIZE] = pktRe;
-                /*
-                if(pkt_get_length(pktRe) > 0) {
-                    ssize_t nbByteW = write(outfd, pkt_get_payload(pktRe), pkt_get_length(pktRe));
-
-                    fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
-
-                } else { // End of file receive
-                    eof = 1;
-                } */
+                bufPkt[pkt_get_seqnum(pktRe) % (MAX_WINDOW_SIZE + 1)] = pktRe;
+                winFree--;
+                // Verify window
+                send_ack(sfd, pkt_get_seqnum(pktRe) + 1, winFree);
             } else {
                 pkt_del(pktRe);
                 fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
             }
         }
-        //if ()
+        if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % (MAX_WINDOW_SIZE + 1))) == indWinRe) {
+            if(pkt_get_length(bufPkt[indWinRe]) > 0) {
+                ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
+                fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+            } else { // End of file receive
+                eof = 1;
+            }
+            pkt_del(bufPkt[indWinRe]);
+            bufPkt[indWinRe] = NULL;
+            indWinRe++;
+            winFree++;
+        }
     }
 }
 
-void send_ack(const int sfd, uint8_t seqnum) {
+void send_ack(const int sfd, uint8_t seqnum, uint8_t window) {
     pkt_t * pktAck = pkt_new();
 
     pkt_set_seqnum(pktAck, seqnum);
     pkt_set_type(pktAck, PTYPE_ACK);
+    pkt_set_window(pktAck,window);
     // TODO add window ??
 
     size_t lenBuf = sizeof(pktAck);
