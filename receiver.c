@@ -4,14 +4,14 @@
 int main(int argc, char * argv[]) {
     fprintf(stderr, "Receiver Launch : number args '%d'\n", argc);
 
-    FILE * f = stdout;
+    FILE * outFile = stdout;
     char openMode[] = "w";
 
     int port = 0;
     char * address = NULL;
     struct sockaddr_in6 addr;
 
-    if(!read_args(argc, argv, &address, &port, &f, openMode)) {
+    if(!read_args(argc, argv, &address, &port, &outFile, openMode)) {
         fprintf(stderr, "Fail read arguments\n");
         return EXIT_FAILURE;
     }
@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) {
     /*
      * Messages exchange
      */
-    reading_loop(sfd, f);
+    reading_loop(sfd, outFile);
     close(sfd);
     fprintf(stderr, "Exiting with success! (Receiver)\n");
     return EXIT_SUCCESS;
@@ -54,8 +54,8 @@ void reading_loop(int sfd, FILE * outFile) {
     int sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe);
     char bufRe[sizeMaxPkt];
 
+    int outfd = fileno(outFile);
     int ret = 0;
-
     fd_set selSo;
 
     while(1) {
@@ -74,12 +74,38 @@ void reading_loop(int sfd, FILE * outFile) {
         if(FD_ISSET(sfd, &selSo)) {
 
             ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
+            int validPkt = pkt_decode(bufRe, nbByteR, pktRe);
 
-            pkt_decode(bufRe, nbByteR, pktRe);
-            ssize_t nbByteW = write(fileno(outFile), pkt_get_payload(pktRe), pkt_get_length(pktRe));
-            pkt_debug(pktRe);
-            fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+            if (validPkt == PKT_OK){
+                send_ack(sfd, pkt_get_seqnum(pktRe));
+
+                ssize_t nbByteW = write(outfd, pkt_get_payload(pktRe), pkt_get_length(pktRe));
+                pkt_debug(pktRe);
+                fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+            } else {
+                fprintf(stderr, "Packet not valid, error code : %d", validPkt);
+            }
         }
-
     }
+}
+
+void send_ack(const int sfd, uint8_t seqnum){
+    pkt_t * pktAck = pkt_new();
+
+    pkt_set_seqnum(pktAck, seqnum);
+    pkt_set_type(pktAck,PTYPE_ACK);
+    // TODO add window ??
+    size_t lenBuf = sizeof(pktAck);
+
+    char bufEnc[lenBuf];
+
+    int statusEnc = pkt_encode(pktAck, bufEnc,&lenBuf);
+
+    if (statusEnc == PKT_OK){
+        int nbByteAck = write(sfd, bufEnc, lenBuf);
+        fprintf(stderr, "Ack send, number byte write : %d", nbByteAck);
+    } else {
+        fprintf(stderr, "Error encoding ack, number error : %d", statusEnc);
+    }
+    pkt_del(pktAck);
 }

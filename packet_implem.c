@@ -43,7 +43,7 @@ pkt_t *pkt_new() {
 }
 
 void pkt_del(pkt_t *pkt) {
-    if(pkt->header.length == 0) {
+    if(pkt->header.length != 0) {
         free(pkt->payload);
     }
     free(pkt);

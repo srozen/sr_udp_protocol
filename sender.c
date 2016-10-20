@@ -88,30 +88,5 @@ void writing_loop(const int sfd, FILE * inFile) {
         }
 
     }
-    /*
-    while(1) {
-
-        FD_ZERO(&selSo);
-
-        FD_SET(sfd, &selSo);
-        //FD_SET(outFile, &selSo);
-
-        if((ret = select(sfd + 1, &selSo, NULL, NULL, NULL)) < 0) {
-            fprintf(stderr, "Reading_loop : Select error\n");
-            break;
-        }
-
-        // LOOK  in socket
-        if(FD_ISSET(sfd, &selSo)) {
-
-            ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
-
-            pkt_decode(bufRe, nbByteR, pktRe);
-            ssize_t nbByteW = write(fileno(outFile), pkt_get_payload(pktRe), pkt_get_length(pktRe));
-
-            fprintf(stderr, "Write in file, nb wrotte bytes : %d", (int) nbByteW);
-        }
-
-    } */
 
 }

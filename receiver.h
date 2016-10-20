@@ -12,4 +12,6 @@
 
 void reading_loop(const int sfd, FILE * outFile);
 
+void send_ack(const int sfd, uint8_t seqnum);
+
 #endif // RECEIVER_H_INCLUDED
