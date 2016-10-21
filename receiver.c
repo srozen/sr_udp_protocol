@@ -58,22 +58,25 @@ void reading_loop(int sfd, FILE * outFile) {
 
     int outfd = fileno(outFile);
     int eof = 0;
-    fd_set selSo;
+
+    fd_set seSoRe;
+    fd_set seOutFi;
 
     while(!eof) {
 
-        FD_ZERO(&selSo);
+        FD_ZERO(&seSoRe);
+        FD_ZERO(&seOutFi);
 
-        FD_SET(sfd, &selSo);
-        FD_SET(outfd, &selSo);
+        FD_SET(sfd, &seSoRe);
+        FD_SET(outfd, &seOutFi);
 
-        if((select(sfd + 1, &selSo, NULL, NULL, NULL)) < 0) {
+        if((select(sfd + 1, &seSoRe, &seOutFi, NULL, NULL)) < 0) {
             fprintf(stderr, "Reading_loop : Select error\n");
             break;
         }
 
         // Look in socket
-        if(FD_ISSET(sfd, &selSo)) {
+        if(FD_ISSET(sfd, &seSoRe)) {
 
             // Read a packet in the socket and decode then.
             pkt_t * pktRe = pkt_new();
@@ -94,23 +97,25 @@ void reading_loop(int sfd, FILE * outFile) {
             }
         }
 
-        // If next pkt can be write
-        if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % (MAX_WINDOW_SIZE + 1))) == indWinRe) {
+        if(FD_ISSET(sfd, &seOutFi)) {
+            // If next pkt can be write
+            if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % (MAX_WINDOW_SIZE + 1))) == indWinRe) {
 
-            if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receiv
-                pkt_del(bufPkt[indWinRe]);
-                bufPkt[indWinRe] = NULL;
-                eof = 1;
-            } else { // Packet with payload.
-                ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
-                fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
-                pkt_del(bufPkt[indWinRe]);
-                bufPkt[indWinRe] = NULL;
-                indWinRe++;
-                if(indWinRe > MAX_WINDOW_SIZE) {
-                    indWinRe = 0;
+                if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receiv
+                    pkt_del(bufPkt[indWinRe]);
+                    bufPkt[indWinRe] = NULL;
+                    eof = 1;
+                } else { // Packet with payload.
+                    ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
+                    fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+                    pkt_del(bufPkt[indWinRe]);
+                    bufPkt[indWinRe] = NULL;
+                    indWinRe++;
+                    if(indWinRe > MAX_WINDOW_SIZE) {
+                        indWinRe = 0;
+                    }
+                    winFree++;
                 }
-                winFree++;
             }
         }
     }
@@ -123,7 +128,6 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
     pkt_set_type(pktAck, PTYPE_ACK);
     pkt_set_window(pktAck, window);
     pkt_set_timestamp(pktAck, timestamp);
-    // TODO add window ??
 
     size_t lenBuf = sizeof(pktAck);
     char * bufEnc = malloc(lenBuf);
