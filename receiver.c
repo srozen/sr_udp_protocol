@@ -54,57 +54,46 @@ void reading_loop(int sfd, FILE * outFile) {
     uint8_t indWinRe = 0; // Index of reading in window buffer
     uint8_t winFree = moduloWindows; // nb free place in window
 
-    char bufRe[sizeMaxPkt];
+    //int nextSeqWri = 0;
 
     int outfd = fileno(outFile);
     int eof = 0;
 
     fd_set seSoRe;
-    fd_set seOutFi;
+
+    FD_ZERO(&seSoRe);
 
     while(!eof) {
 
-        FD_ZERO(&seSoRe);
-        FD_ZERO(&seOutFi);
-
         FD_SET(sfd, &seSoRe);
-        FD_SET(outfd, &seOutFi);
+        FD_SET(outfd, &seSoRe);
 
-        if((select(sfd + 1, &seSoRe, &seOutFi, NULL, NULL)) < 0) {
+        if((select(sfd + 1, &seSoRe, NULL, NULL, NULL)) < 0) {
             fprintf(stderr, "Reading_loop : Select error\n");
             break;
         }
 
         // Look in socket
-        if(FD_ISSET(sfd, &seSoRe)) {
-
-            // Read a packet in the socket and decode then.
-            pkt_t * pktRe = pkt_new();
-            ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
-            int validPkt = pkt_decode(bufRe, nbByteR, pktRe);
-
-            if(validPkt == PKT_OK && winFree > 0) { // Verify the integrity of pkt and if there is place in window buffer
-                pkt_debug(pktRe);
-                // Put in buf window
-                bufPkt[pkt_get_seqnum(pktRe) % moduloWindows] = pktRe;
+        if(FD_ISSET(sfd, &seSoRe) && winFree > 0) {
+            pkt_t * pktRead = read_packet(sizeMaxPkt, sfd);
+            if(pktRead != NULL) {
+                bufPkt[pkt_get_seqnum(pktRead) % moduloWindows] = pktRead;
                 winFree--;
-                // TODO ACK
-                send_ack(sfd, pkt_get_seqnum(pktRe) + 1, winFree, pkt_get_timestamp(pktRe));
-            } else {
-                // If packet is not correct
-                fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
-                pkt_del(pktRe);
+                // TODO ACK of last seqnum write
+                send_ack(sfd, pkt_get_seqnum(pktRead) + 1, winFree, pkt_get_timestamp(pktRead));
             }
         }
 
-
         // If next pkt can be write
-        if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % moduloWindows)) == indWinRe) {
+        if(bufPkt[indWinRe] != NULL) {
             fprintf(stderr, "Write a packet\n");
+
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                 fprintf(stderr, "End of file return, close connection\n");
+
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
+
                 eof = 1;
             } else { // Packet with payload.
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
@@ -119,7 +108,6 @@ void reading_loop(int sfd, FILE * outFile) {
                 winFree++;
             }
         }
-
     }
 }
 
@@ -146,3 +134,22 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
     pkt_del(pktAck);
 }
 
+pkt_t * read_packet(const int sizeMaxPkt, int sfd) {
+    // Read a packet in the socket and decode then.
+    char bufRe[sizeMaxPkt];
+
+    pkt_t * pktRe = pkt_new();
+    ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
+    int validPkt = pkt_decode(bufRe, nbByteR, pktRe);
+
+    if(validPkt == PKT_OK) { // Verify the integrity of pkt and if there is place in window buffer
+        pkt_debug(pktRe);
+        // Put in buf window
+        return pktRe;
+    } else {
+        // If packet is not correct
+        fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
+        pkt_del(pktRe);
+        return NULL;
+    }
+}
