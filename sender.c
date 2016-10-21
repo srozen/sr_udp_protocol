@@ -107,10 +107,10 @@ void writing_loop(const int sfd, FILE * inFile) {
             } else {
                 for(int i = 0; i < MAX_WINDOW_SIZE; i++){
                     if(pktBuffer[i] != NULL && time(NULL) > (pkt_get_timestamp(pktBuffer[i]) + 5)){
-                        fprintf(stderr, "RESEND\n");
                         size_t tmps = sizeMaxPkt;
                         pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
-                        write(sfd, socketWriteBuf, tmps);
+                        int nbsdfsdfq = write(sfd, socketWriteBuf, tmps);
+                        fprintf(stderr, "Resend nb byte : %d", nbsdfsdfq);
                         pkt_set_timestamp(pktBuffer[i], timestamp());
                     }
                 }

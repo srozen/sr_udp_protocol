@@ -81,14 +81,11 @@ void reading_loop(int sfd, FILE * outFile) {
 
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
                 winFree--;
-                //uint8_t temp = seqnumAck;
                 count++; //DEBUG
 
                 if (seqnumAck + 1 > pkt_get_seqnum(pktRead) || seqnumAck < pkt_get_seqnum(pktRead)-winFree){
                     increment_seqnum(&seqnumAck);
                 }
-
-                // TODO ACK of last seqnum write
                 // DEBUG
                 if(!(count % 2 == 0 || count % 3 == 0)){
                     send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
