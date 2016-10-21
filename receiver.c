@@ -96,28 +96,29 @@ void reading_loop(int sfd, FILE * outFile) {
             }
         }
 
-        if(FD_ISSET(sfd, &seOutFi)) {
-            // If next pkt can be write
-            if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % (MAX_WINDOW_SIZE + 1))) == indWinRe) {
 
-                if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
-                    pkt_del(bufPkt[indWinRe]);
-                    bufPkt[indWinRe] = NULL;
-                    eof = 1;
-                } else { // Packet with payload.
-                    ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
-                    fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
-                    pkt_del(bufPkt[indWinRe]);
-                    bufPkt[indWinRe] = NULL;
+        // If next pkt can be write
+        if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % (MAX_WINDOW_SIZE + 1))) == indWinRe) {
+            fprintf(stderr, "Write a packet\n");
+            if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
+                fprintf(stderr, "End of file return, close connection\n");
+                pkt_del(bufPkt[indWinRe]);
+                bufPkt[indWinRe] = NULL;
+                eof = 1;
+            } else { // Packet with payload.
+                ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
+                fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+                pkt_del(bufPkt[indWinRe]);
+                bufPkt[indWinRe] = NULL;
 
-                    indWinRe++;
-                    if(indWinRe > MAX_WINDOW_SIZE) {
-                        indWinRe = 0;
-                    }
-                    winFree++;
+                indWinRe++;
+                if(indWinRe > MAX_WINDOW_SIZE) {
+                    indWinRe = 0;
                 }
+                winFree++;
             }
         }
+
     }
 }
 
@@ -144,7 +145,7 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
     pkt_del(pktAck);
 }
 
-void writePkt(){
+void writePkt() {
 
 
 
