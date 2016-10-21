@@ -47,6 +47,8 @@ void writing_loop(const int sfd, FILE * inFile) {
     // Packets buffers
     const int moduloWindows = MAX_WINDOW_SIZE + 1;
     pkt_t * pktBuffer[moduloWindows];
+    for (int i=0; i<moduloWindows;i++)
+        pktBuffer[i] = NULL;
 
     char fileReadBuf[MAX_PAYLOAD_SIZE];
     char socketReadBuf[sizeMaxPkt];
@@ -117,7 +119,7 @@ void writing_loop(const int sfd, FILE * inFile) {
                 int finish = 0;
                 while(!finish && pktBuffer[seq % moduloWindows] != NULL) {
 
-                    fprintf(stderr, "I free buffer number %d\n", seq);
+                    fprintf(stderr, "I free buffer number %d\n", seq % moduloWindows);
                     pkt_del(pktBuffer[seq % moduloWindows]);
                     pktBuffer[seq % moduloWindows] = NULL;
                     if(seq > 0) {
@@ -125,7 +127,7 @@ void writing_loop(const int sfd, FILE * inFile) {
                     } else {
                         seq = MAX_SEQNUM;
                     }
-                    if(seq < (pkt_get_seqnum(pktRe) - 1 - winSize) || seq > pkt_get_seqnum(pktRe) + MAX_WINDOW_SIZE) {
+                    if(seq < (pkt_get_seqnum(pktRe) - 1 - winSize) || seq + winSize < pkt_get_seqnum(pktRe)) {
                         finish = 1;
                     }
                 }
