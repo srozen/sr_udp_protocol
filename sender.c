@@ -40,33 +40,32 @@ void writing_loop(const int sfd, FILE * inFile) {
     char socketReadBuf[sizeMaxPkt];
     char socketWriteBuf[sizeMaxPkt];
     ssize_t nbByteRe = 0;
-    //ssize_t nbByteWr = 0;
+    ssize_t nbByteWr = 0;
 
     uint8_t seqnum = 0; //First seqnum must be 0
     uint8_t winSize = 1;
     uint8_t lastSeqnum = 0;
 
     int eof = 0;
-    fd_set selInput;
-    fd_set selOutput;
+    int allWritten = 1;
+    fd_set selSo;
 
     while(!eof){
-        FD_ZERO(&selInput);
-        FD_ZERO(&selOutput);
-        FD_SET(fileno(inFile), &selInput);
-        //FD_SET(sfd, &selInput);
-        //FD_SET(fileno(inFile), &selOutput);
-        FD_SET(sfd, &selOutput);
+        FD_ZERO(&selSo);
+        FD_SET(fileno(inFile), &selSo);
+        FD_SET(sfd, &selSo);
 
-        int sct = select(sfd+1, &selInput, &selOutput, NULL, NULL);
+
+
+        int sct = select(sfd+1, &selSo, NULL, NULL, NULL);
 
         if(sct < 0){
             fprintf(stderr, "An error occured on select %s\n", strerror(errno));
             break;
         }
 
-        if(winSize > 0){
-            if(FD_ISSET(fileno(inFile), &selInput)){
+        if(winSize > 0 && allWritten){
+            if(FD_ISSET(fileno(inFile), &selSo)){
                 nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
 
                 // Packet initialization + encode
@@ -80,7 +79,10 @@ void writing_loop(const int sfd, FILE * inFile) {
 
                 int validPkt = pkt_encode(pktWr, socketWriteBuf, &tmp);
                 if(validPkt == 0){
-                    write(sfd, socketWriteBuf, sizeMaxPkt);
+                    nbByteWr = write(sfd, socketWriteBuf, tmp);
+                    if(nbByteWr != nbByteRe + (int)sizeof(pktWr) + 4){
+                        fprintf(stderr, "Error on write from file\n");
+                    }
                 } else {
                     fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
                 }
@@ -90,13 +92,13 @@ void writing_loop(const int sfd, FILE * inFile) {
                 lastSeqnum = pkt_get_seqnum(pktWr);
 
                 if(nbByteRe == 0){
+                    allWritten = 0;
                     lastSeqnum++;
-                    fprintf(stderr, "Last Seqnum : %d\n", lastSeqnum);
                 }
             }
         }
 
-        if(FD_ISSET(sfd, &selOutput)){
+        if(FD_ISSET(sfd, &selSo)){
             nbByteRe = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
             pkt_decode(socketReadBuf, nbByteRe, pktRe); // Create new packet from buffer
             pkt_debug(pktRe); // Debug ACK
