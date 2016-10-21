@@ -44,6 +44,10 @@ void writing_loop(const int sfd, FILE * inFile) {
     pkt_t * pktRe = pkt_new();
     const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktWr) + 4;
 
+    // Packets buffers
+    const int moduloWindows = MAX_WINDOW_SIZE + 1;
+    pkt_t * pktBuffer[moduloWindows];
+
     char fileReadBuf[MAX_PAYLOAD_SIZE];
     char socketReadBuf[sizeMaxPkt];
     char socketWriteBuf[sizeMaxPkt];
@@ -81,6 +85,7 @@ void writing_loop(const int sfd, FILE * inFile) {
 
                 if(validPkt == 0){
                     nbByteWr = write(sfd, socketWriteBuf, tmp);
+                    pktBuffer[pkt_get_seqnum(pktWr) % moduloWindows] = pktWr;
                     if(nbByteWr != nbByteRe + (int)sizeof(pktWr) + 4){
                         fprintf(stderr, "Error on write from file\n");
                     }
