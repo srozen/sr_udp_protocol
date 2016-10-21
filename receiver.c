@@ -46,13 +46,13 @@ int main(int argc, char * argv[]) {
 void reading_loop(int sfd, FILE * outFile) {
     fprintf(stderr, "Begin loop to read socket\n");
 
-
     // init variable
     const int sizeMaxPkt = MAX_PAYLOAD_SIZE + 12;
     pkt_t * bufPkt[MAX_WINDOW_SIZE];
 
     uint8_t indWinRe = 0; // Index of reading in window buffer
     uint8_t winFree = MAX_WINDOW_SIZE; // nb free place in window
+    int lastSeqNum = 0;
 
     char bufRe[sizeMaxPkt];
 
@@ -101,7 +101,7 @@ void reading_loop(int sfd, FILE * outFile) {
             // If next pkt can be write
             if(bufPkt[indWinRe] != NULL && ((pkt_get_seqnum(bufPkt[indWinRe]) % (MAX_WINDOW_SIZE + 1))) == indWinRe) {
 
-                if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receiv
+                if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                     pkt_del(bufPkt[indWinRe]);
                     bufPkt[indWinRe] = NULL;
                     eof = 1;
@@ -110,6 +110,7 @@ void reading_loop(int sfd, FILE * outFile) {
                     fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
                     pkt_del(bufPkt[indWinRe]);
                     bufPkt[indWinRe] = NULL;
+
                     indWinRe++;
                     if(indWinRe > MAX_WINDOW_SIZE) {
                         indWinRe = 0;
@@ -142,4 +143,10 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
 
     free(bufEnc);
     pkt_del(pktAck);
+}
+
+void writePkt(){
+
+
+
 }
