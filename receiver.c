@@ -90,7 +90,7 @@ void reading_loop(int sfd, FILE * outFile) {
 
                 // TODO ACK of last seqnum write
                 // DEBUG
-                if(count != 2){
+                if(!(count % 2 == 0 || count % 3 == 0)){
                     send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
                 }
             }
