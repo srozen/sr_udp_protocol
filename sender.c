@@ -73,9 +73,8 @@ void writing_loop(const int sfd, FILE * inFile) {
             fprintf(stderr, "An error occured on select %s\n", strerror(errno));
             break;
         }
-
-        if(winSize > 0 && allWritten) {
-            if(FD_ISSET(fileno(inFile), &selSo)) {
+        if(FD_ISSET(fileno(inFile), &selSo)) {
+            if(winSize > 0 && allWritten) {
                 nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
                 pkt_t * pktWr = pkt_new();
                 // Packet initialization + encode
@@ -85,6 +84,7 @@ void writing_loop(const int sfd, FILE * inFile) {
 
                 if(validPkt == 0) {
                     nbByteWr = write(sfd, socketWriteBuf, tmp);
+                    fprintf(stderr, "SEND\n");
                     // put packet packet buffer
                     pktBuffer[pkt_get_seqnum(pktWr) % moduloWindows] = pktWr;
                     if(nbByteWr != nbByteRe + (int)sizeof(pktWr) + 4) {
@@ -102,8 +102,19 @@ void writing_loop(const int sfd, FILE * inFile) {
                     allWritten = 0;
                     lastSeqnum++;
                 }
+            } else {
+                for(int i = 0; i < MAX_WINDOW_SIZE; i++){
+                    if(pktBuffer[i] != NULL && time(NULL) > (pkt_get_timestamp(pktBuffer[i]) + 5)){
+                        fprintf(stderr, "RESEND\n");
+                        size_t tmps = sizeMaxPkt;
+                        pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
+                        write(sfd, socketWriteBuf, tmps);
+                        pkt_set_timestamp(pktBuffer[i], timestamp());
+                    }
+                }
             }
         }
+
         if(FD_ISSET(sfd, &selSo)) {
             nbByteRe = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
 
