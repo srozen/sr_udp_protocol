@@ -52,7 +52,6 @@ void reading_loop(int sfd, FILE * outFile) {
 
     uint8_t indWinRe = 0; // Index of reading in window buffer
     uint8_t winFree = MAX_WINDOW_SIZE; // nb free place in window
-    int lastSeqNum = 0;
 
     char bufRe[sizeMaxPkt];
 
