@@ -31,7 +31,7 @@ int main(int argc, char * argv[]) {
     return EXIT_SUCCESS;
 }
 
-void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const uint8_t seqNum, const ptypes_t type, const uint8_t winSize, const uint32_t timestamp){
+void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const uint8_t seqNum, const ptypes_t type, const uint8_t winSize, const uint32_t timestamp) {
     pkt_set_payload(pkt, fileReadBuf, nbByteRe);
     pkt_set_seqnum(pkt, seqNum);
     pkt_set_type(pkt, type);
@@ -40,9 +40,9 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
 }
 
 void writing_loop(const int sfd, FILE * inFile) {
-    pkt_t * pktWr = pkt_new();
+
     pkt_t * pktRe = pkt_new();
-    const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktWr) + 4;
+    const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe) + 4;
 
     // Packets buffers
     const int moduloWindows = MAX_WINDOW_SIZE + 1;
@@ -62,31 +62,32 @@ void writing_loop(const int sfd, FILE * inFile) {
     int allWritten = 1;
     fd_set selSo;
 
-    while(!eof){
+    while(!eof) {
         FD_ZERO(&selSo);
         FD_SET(fileno(inFile), &selSo);
         FD_SET(sfd, &selSo);
 
-        int sct = select(sfd+1, &selSo, NULL, NULL, NULL);
+        int sct = select(sfd + 1, &selSo, NULL, NULL, NULL);
 
-        if(sct < 0){
+        if(sct < 0) {
             fprintf(stderr, "An error occured on select %s\n", strerror(errno));
             break;
         }
 
-        if(winSize > 0 && allWritten){
-            if(FD_ISSET(fileno(inFile), &selSo)){
+        if(winSize > 0 && allWritten) {
+            if(FD_ISSET(fileno(inFile), &selSo)) {
                 nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
-
+                pkt_t * pktWr = pkt_new();
                 // Packet initialization + encode
                 init_pkt(pktWr, fileReadBuf, nbByteRe, seqnum, PTYPE_DATA, winSize, timestamp());
                 size_t tmp = sizeMaxPkt;
                 int validPkt = pkt_encode(pktWr, socketWriteBuf, &tmp);
 
-                if(validPkt == 0){
+                if(validPkt == 0) {
                     nbByteWr = write(sfd, socketWriteBuf, tmp);
+                    // put packet packet buffer
                     pktBuffer[pkt_get_seqnum(pktWr) % moduloWindows] = pktWr;
-                    if(nbByteWr != nbByteRe + (int)sizeof(pktWr) + 4){
+                    if(nbByteWr != nbByteRe + (int)sizeof(pktWr) + 4) {
                         fprintf(stderr, "Error on write from file\n");
                     }
                 } else {
@@ -97,35 +98,46 @@ void writing_loop(const int sfd, FILE * inFile) {
                 increment_seqnum(&seqnum);
                 lastSeqnum = pkt_get_seqnum(pktWr);
 
-                if(nbByteRe == 0){
+                if(nbByteRe == 0) {
                     allWritten = 0;
                     lastSeqnum++;
                 }
             }
         }
-        if(FD_ISSET(sfd, &selSo)){
+        if(FD_ISSET(sfd, &selSo)) {
             nbByteRe = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
-            if(nbByteRe > 0){ // If something has been read from SFD
+
+            if(nbByteRe > 0) { // If something has been read from SFD
                 pkt_decode(socketReadBuf, nbByteRe, pktRe); // Create new packet from buffer
                 pkt_debug(pktRe); // Debug ACK
                 winSize = pkt_get_window(pktRe);
 
                 // Free packets
-                int seq = pkt_get_seqnum(pktRe);
-                int count = 0;// DEBUG
-                for(int i = MAX_WINDOW_SIZE; i > 0; i--){
-                    pktBuffer[seq % moduloWindows] = NULL;
-                    seq = decrement_seqnum(seq);
-                    count ++;//DEBUG
-                }
-                fprintf(stderr, "Packet been free : %d\n", count); //DEBUG
+                int seq = pkt_get_seqnum(pktRe) - 1;
+                int finish = 0;
+                while(!finish && pktBuffer[seq % moduloWindows] != NULL) {
 
-                if(pkt_get_seqnum(pktRe) == lastSeqnum){
+                    fprintf(stderr, "I free buffer number %d\n", seq);
+                    pkt_del(pktBuffer[seq % moduloWindows]);
+                    pktBuffer[seq % moduloWindows] = NULL;
+                    if(seq > 0) {
+                        seq--;
+                    } else {
+                        seq = MAX_SEQNUM;
+                    }
+                    if(seq < (pkt_get_seqnum(pktRe) - 1 - winSize) || seq > pkt_get_seqnum(pktRe) + MAX_WINDOW_SIZE) {
+                        finish = 1;
+                    }
+                }
+
+                if(pkt_get_seqnum(pktRe) == lastSeqnum) {
                     eof = 1;
                 }
             }
         }
     }
+
+    pkt_del(pktRe);
 }
 
 
