@@ -43,10 +43,12 @@ pkt_t *pkt_new() {
 }
 
 void pkt_del(pkt_t *pkt) {
-    if(pkt->header.length != 0) {
-        free(pkt->payload);
+    if(pkt != NULL) {
+        if(pkt->header.length != 0) {
+            free(pkt->payload);
+        }
+        free(pkt);
     }
-    free(pkt);
 }
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
@@ -179,15 +181,15 @@ pkt_status_code pkt_set_payload(pkt_t *pkt, const char *data, const uint16_t len
     return PKT_OK;
 }
 
-void increment_seqnum(uint8_t * seqnum){
-    if(*seqnum == MAX_SEQNUM){
+void increment_seqnum(uint8_t * seqnum) {
+    if(*seqnum == MAX_SEQNUM) {
         *seqnum = 0;
     } else {
         *seqnum += 1;
     }
 }
 
-uint32_t timestamp(){
+uint32_t timestamp() {
     return (uint32_t)time(NULL);
 }
 
