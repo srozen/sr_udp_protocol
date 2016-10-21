@@ -48,13 +48,13 @@ void reading_loop(int sfd, FILE * outFile) {
 
     // init variable
     const int sizeMaxPkt = MAX_PAYLOAD_SIZE + 12;
-    const int moduloWindows = MAX_WINDOW_SIZE + 1;
-    pkt_t * bufPkt[moduloWindows];
+    const int windowSize = MAX_WINDOW_SIZE + 1;
+    pkt_t * bufPkt[windowSize];
 
     uint8_t indWinRe = 0; // Index of reading in window buffer
-    uint8_t winFree = moduloWindows; // nb free place in window
+    uint8_t winFree = windowSize; // nb free place in window
 
-    //int nextSeqWri = 0;
+    uint8_t seqnumAck = 0;
 
     int outfd = fileno(outFile);
     int eof = 0;
@@ -79,34 +79,33 @@ void reading_loop(int sfd, FILE * outFile) {
         if(FD_ISSET(sfd, &seSoRe) && winFree > 0) {
             pkt_t * pktRead = read_packet(sizeMaxPkt, sfd);
             if(pktRead != NULL) {
-                bufPkt[pkt_get_seqnum(pktRead) % moduloWindows] = pktRead;
-                winFree--;
-                count ++;
-                // TODO ACK of last seqnum write
-                if(count != 2){
-                    send_ack(sfd, pkt_get_seqnum(pktRead) + 1, winFree, pkt_get_timestamp(pktRead));
 
+                bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
+                winFree--;
+                //uint8_t temp = seqnumAck;
+
+                if (seqnumAck + 1 > pkt_get_seqnum(pktRead) || seqnumAck < pkt_get_seqnum(pktRead)-winFree){
+                    increment_seqnum(&seqnumAck);
                 }
+
+                // TODO ACK of last seqnum write
+                send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
             }
         }
 
         // If next pkt can be write
-        if(bufPkt[indWinRe] != NULL) {
+        if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe])%windowSize == indWinRe) {
             fprintf(stderr, "Write a packet\n");
-
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                 fprintf(stderr, "End of file return, close connection\n");
-
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
-
                 eof = 1;
             } else { // Packet with payload.
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
-                fprintf(stderr, "Write in file, nb wrotte bytes : %d\n", (int) nbByteW);
+                fprintf(stderr, "Write out, nb wrotte bytes : %d\n", (int) nbByteW);
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
-
                 indWinRe++;
                 if(indWinRe > MAX_WINDOW_SIZE) {
                     indWinRe = 0;
