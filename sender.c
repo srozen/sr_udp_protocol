@@ -31,6 +31,14 @@ int main(int argc, char * argv[]) {
     return EXIT_SUCCESS;
 }
 
+void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const uint8_t seqNum, const ptypes_t type, const uint8_t winSize, const uint32_t timestamp){
+    pkt_set_payload(pkt, fileReadBuf, nbByteRe);
+    pkt_set_seqnum(pkt, seqNum);
+    pkt_set_type(pkt, type);
+    pkt_set_window(pkt, winSize);
+    pkt_set_timestamp(pkt, timestamp);
+}
+
 void writing_loop(const int sfd, FILE * inFile) {
     pkt_t * pktWr = pkt_new();
     pkt_t * pktRe = pkt_new();
@@ -55,8 +63,6 @@ void writing_loop(const int sfd, FILE * inFile) {
         FD_SET(fileno(inFile), &selSo);
         FD_SET(sfd, &selSo);
 
-
-
         int sct = select(sfd+1, &selSo, NULL, NULL, NULL);
 
         if(sct < 0){
@@ -69,15 +75,10 @@ void writing_loop(const int sfd, FILE * inFile) {
                 nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
 
                 // Packet initialization + encode
-                pkt_set_payload(pktWr, fileReadBuf, nbByteRe);
-                pkt_set_seqnum(pktWr, seqnum);
-                pkt_set_type(pktWr, PTYPE_DATA);
-                pkt_set_window(pktWr, winSize);
-                pkt_set_timestamp(pktWr, timestamp());
-
+                init_pkt(pktWr, fileReadBuf, nbByteRe, seqnum, PTYPE_DATA, winSize, timestamp());
                 size_t tmp = sizeMaxPkt;
-
                 int validPkt = pkt_encode(pktWr, socketWriteBuf, &tmp);
+
                 if(validPkt == 0){
                     nbByteWr = write(sfd, socketWriteBuf, tmp);
                     if(nbByteWr != nbByteRe + (int)sizeof(pktWr) + 4){
@@ -97,17 +98,19 @@ void writing_loop(const int sfd, FILE * inFile) {
                 }
             }
         }
-
         if(FD_ISSET(sfd, &selSo)){
             nbByteRe = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
-            pkt_decode(socketReadBuf, nbByteRe, pktRe); // Create new packet from buffer
-            pkt_debug(pktRe); // Debug ACK
-            winSize = pkt_get_window(pktRe);
+            if(nbByteRe > 0){ // If something has been read from SFD
+                pkt_decode(socketReadBuf, nbByteRe, pktRe); // Create new packet from buffer
+                pkt_debug(pktRe); // Debug ACK
+                winSize = pkt_get_window(pktRe);
 
-            if(pkt_get_seqnum(pktRe) == lastSeqnum){
-                eof = 1;
+                if(pkt_get_seqnum(pktRe) == lastSeqnum){
+                    eof = 1;
+                }
             }
         }
-
     }
 }
+
+
