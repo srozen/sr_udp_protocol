@@ -120,6 +120,11 @@ pkt_status_code pkt_set_payload(pkt_t*, const char *data, const uint16_t length)
 void increment_seqnum(uint8_t * seqnum);
 
 /*
+ * Decrement seqnum
+ */
+int decrement_seqnum(int seqnum);
+
+/*
  * Return a timestamp from system time
  */
 uint32_t timestamp();

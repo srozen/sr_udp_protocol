@@ -189,6 +189,14 @@ void increment_seqnum(uint8_t * seqnum) {
     }
 }
 
+int decrement_seqnum(int seqnum){
+    if(seqnum == 0){
+        return 255;
+    } else {
+        return seqnum -1;
+    }
+}
+
 uint32_t timestamp() {
     return (uint32_t)time(NULL);
 }

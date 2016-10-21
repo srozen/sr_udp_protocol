@@ -110,6 +110,16 @@ void writing_loop(const int sfd, FILE * inFile) {
                 pkt_debug(pktRe); // Debug ACK
                 winSize = pkt_get_window(pktRe);
 
+                // Free packets
+                int seq = pkt_get_seqnum(pktRe);
+                int count = 0;// DEBUG
+                for(int i = MAX_WINDOW_SIZE; i > 0; i--){
+                    pktBuffer[seq % moduloWindows] = NULL;
+                    seq = decrement_seqnum(seq);
+                    count ++;//DEBUG
+                }
+                fprintf(stderr, "Packet been free : %d\n", count); //DEBUG
+
                 if(pkt_get_seqnum(pktRe) == lastSeqnum){
                     eof = 1;
                 }

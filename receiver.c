@@ -59,6 +59,8 @@ void reading_loop(int sfd, FILE * outFile) {
     int outfd = fileno(outFile);
     int eof = 0;
 
+    int count = 0;
+
     fd_set seSoRe;
 
     FD_ZERO(&seSoRe);
@@ -79,8 +81,12 @@ void reading_loop(int sfd, FILE * outFile) {
             if(pktRead != NULL) {
                 bufPkt[pkt_get_seqnum(pktRead) % moduloWindows] = pktRead;
                 winFree--;
+                count ++;
                 // TODO ACK of last seqnum write
-                send_ack(sfd, pkt_get_seqnum(pktRead) + 1, winFree, pkt_get_timestamp(pktRead));
+                if(count != 2){
+                    send_ack(sfd, pkt_get_seqnum(pktRead) + 1, winFree, pkt_get_timestamp(pktRead));
+
+                }
             }
         }
 
