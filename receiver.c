@@ -58,6 +58,7 @@ void reading_loop(int sfd, FILE * outFile) {
 
     int outfd = fileno(outFile);
     int eof = 0;
+    int count = 0;
 
     fd_set seSoRe;
 
