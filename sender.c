@@ -10,7 +10,7 @@ int main(int argc, char * argv[]) {
     char * address = NULL;
     struct sockaddr_in6 addr;
 
-    if(!read_args(argc, argv, &address, &port, &f, openMode)) {
+    if(read_args(argc, argv, &address, &port, &f, openMode) != 0) {
         return EXIT_FAILURE;
     }
     const char *err = real_address(address, &addr);

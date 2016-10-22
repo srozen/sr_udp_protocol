@@ -14,7 +14,7 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
                     "-f FILE    Specify a file to send as data, or to store data in it (optional).\n"
                     "HOSTNAME   IPv6 address or hostname to reach.\n"
                     "PORTNUM    Port number.\n");
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         }
     }
     // Assign address and port
@@ -23,7 +23,7 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
                 "-f FILE    Specify a file to send as data, or to store data in it (optional).\n"
                 "HOSTNAME   IPv6 address or hostname to reach.\n"
                 "PORTNUM    Port number.\n");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     char* buff = argv[optind];
     *address = buff;
@@ -32,14 +32,6 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
     if(file != NULL) {
         *f = fopen(file, openMode);
     }
-
-    // READARGS - DEBUG
-    fprintf(stderr, "Filedes  : %d\n", f!=NULL);
-    fprintf(stderr, "Openmode : %s\n", openMode);
-    fprintf(stderr, "Filename : %s\n", file);
-    fprintf(stderr, "Address  : %s\n", *address);
-    fprintf(stderr, "Portno   : %d\n", *port);
-
-    return 1;
+    return EXIT_SUCCESS;
 
 }

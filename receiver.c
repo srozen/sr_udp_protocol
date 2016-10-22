@@ -10,7 +10,7 @@ int main(int argc, char * argv[]) {
     char * address = NULL;
     struct sockaddr_in6 addr;
 
-    if(!read_args(argc, argv, &address, &port, &outFile, openMode)) {
+    if(read_args(argc, argv, &address, &port, &outFile, openMode) != 0) {
         fprintf(stderr, "Fail read arguments\n");
         return EXIT_FAILURE;
     }
