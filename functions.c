@@ -11,11 +11,20 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
             break;
         default:
             fprintf(stderr, "Usage:\n"
-                    "-f FILE Specify a file to send as data, or to store data in it.\n");
+                    "-f FILE    Specify a file to send as data, or to store data in it (optional).\n"
+                    "HOSTNAME   IPv6 address or hostname to reach.\n"
+                    "PORTNUM    Port number.\n");
             exit(EXIT_FAILURE);
         }
     }
     // Assign address and port
+    if(argv[optind] == NULL || argv[optind + 1] == NULL){
+        fprintf(stderr, "Usage:\n"
+                "-f FILE    Specify a file to send as data, or to store data in it (optional).\n"
+                "HOSTNAME   IPv6 address or hostname to reach.\n"
+                "PORTNUM    Port number.\n");
+        exit(EXIT_FAILURE);
+    }
     char* buff = argv[optind];
     *address = buff;
     *port = atoi(argv[optind + 1]);
