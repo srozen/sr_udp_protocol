@@ -138,7 +138,12 @@ void writing_loop(const int sfd, FILE * inFile) {
                 winSize = pkt_get_window(pktRe);
 
                 // Free packets
-                int seq = pkt_get_seqnum(pktRe) - 1;
+                uint8_t seq;
+                if(pkt_get_seqnum(pktRe) != 0) {
+                    seq = pkt_get_seqnum(pktRe) - 1;
+                } else {
+                    seq = MAX_SEQNUM;
+                }
                 int finish = 0;
                 while(!finish && pktBuffer[seq % moduloWindows] != NULL) {
 
