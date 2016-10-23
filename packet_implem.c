@@ -189,11 +189,11 @@ void increment_seqnum(uint8_t * seqnum) {
     }
 }
 
-int decrement_seqnum(int seqnum){
-    if(seqnum == 0){
-        return 255;
+void decrement_seqnum(uint8_t * seqnum){
+     if(*seqnum == 0) {
+        *seqnum = MAX_SEQNUM;
     } else {
-        return seqnum -1;
+        *seqnum -= 1;
     }
 }
 

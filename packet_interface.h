@@ -122,7 +122,7 @@ void increment_seqnum(uint8_t * seqnum);
 /*
  * Decrement seqnum
  */
-int decrement_seqnum(int seqnum);
+void decrement_seqnum(uint8_t * seqnum);
 
 /*
  * Return a timestamp from system time

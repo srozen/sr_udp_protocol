@@ -138,23 +138,16 @@ void writing_loop(const int sfd, FILE * inFile) {
                 winSize = pkt_get_window(pktRe);
 
                 // Free packets
-                uint8_t seq;
-                if(pkt_get_seqnum(pktRe) != 0) {
-                    seq = pkt_get_seqnum(pktRe) - 1;
-                } else {
-                    seq = MAX_SEQNUM;
-                }
+                uint8_t seq = pkt_get_seqnum(pktRe);
+                decrement_seqnum(&seq);
+
                 int finish = 0;
                 while(!finish && pktBuffer[seq % moduloWindows] != NULL) {
 
                     fprintf(stderr, "I free buffer number %d\n", seq % moduloWindows);
                     pkt_del(pktBuffer[seq % moduloWindows]);
                     pktBuffer[seq % moduloWindows] = NULL;
-                    if(seq > 0) {
-                        seq--;
-                    } else {
-                        seq = MAX_SEQNUM;
-                    }
+                    decrement_seqnum(&seq);
                     if(seq < (pkt_get_seqnum(pktRe) - 1 - winSize) || seq + winSize < pkt_get_seqnum(pktRe)) {
                         finish = 1;
                     }
