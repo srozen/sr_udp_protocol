@@ -50,6 +50,8 @@ void reading_loop(int sfd, FILE * outFile) {
     const int sizeMaxPkt = MAX_PAYLOAD_SIZE + 12;
     const int windowSize = MAX_WINDOW_SIZE + 1;
     pkt_t * bufPkt[windowSize];
+    for(int i = 0; i < windowSize; i++)
+        bufPkt[i] = NULL;
 
     uint8_t indWinRe = 0; // Index of reading in window buffer
     uint8_t winFree = windowSize; // nb free place in window
@@ -84,9 +86,8 @@ void reading_loop(int sfd, FILE * outFile) {
                 if (seqnumAck + 1 > pkt_get_seqnum(pktRead) || seqnumAck < pkt_get_seqnum(pktRead)-winFree){
                     increment_seqnum(&seqnumAck);
                 }
-                //if (pkt_get_length(pktRead)!=0){
+
                 send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
-                //}
 
             }
         }

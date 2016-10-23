@@ -120,7 +120,7 @@ void writing_loop(const int sfd, FILE * inFile) {
                 size_t tmps = sizeMaxPkt;
                 pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
                 int nbWrite = write(sfd, socketWriteBuf, tmps);
-                if(nbWrite < 0 || allWritten == 0) {
+                if(nbWrite < 0) {
                     fprintf(stderr, "Client leave, finish Connection!\n");
                     eof = 1;
                 }
@@ -148,7 +148,9 @@ void writing_loop(const int sfd, FILE * inFile) {
                     pkt_del(pktBuffer[seq % moduloWindows]);
                     pktBuffer[seq % moduloWindows] = NULL;
                     decrement_seqnum(&seq);
-                    if(seq < (pkt_get_seqnum(pktRe) - 1 - winSize) || seq + winSize < pkt_get_seqnum(pktRe)) {
+
+                    if(pkt_get_seqnum(pktRe) - winSize > seq ||
+                        (pkt_get_seqnum(pktRe) < seq && (MAX_SEQNUM - winSize + pkt_get_seqnum(pktRe) < seq))) {
                         finish = 1;
                     }
                 }
