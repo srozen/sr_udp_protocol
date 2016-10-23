@@ -53,7 +53,7 @@ void reading_loop(int sfd, FILE * outFile) {
     for(int i = 0; i < windowSize; i++)
         bufPkt[i] = NULL;
 
-    uint8_t indWinRe = 0; // Index of reading in window buffer
+    uint8_t nextSeq = 0; // Next seqnum waiting
     uint8_t winFree = windowSize; // nb free place in window
 
     uint8_t seqnumAck = 0;
@@ -71,7 +71,7 @@ void reading_loop(int sfd, FILE * outFile) {
         FD_SET(outfd, &seSoRe);
 
         if((select(sfd + 1, &seSoRe, NULL, NULL, NULL)) < 0) {
-            fprintf(stderr, "Reading_loop : Select error\n");
+            fprintf(stderr, "An error occured on select %s (reading_loop)\n", strerror(errno));
             break;
         }
 
@@ -92,8 +92,10 @@ void reading_loop(int sfd, FILE * outFile) {
             }
         }
 
+        uint8_t indWinRe = nextSeq % windowSize;
+
         // If next pkt can be write
-        if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe])%windowSize == indWinRe) {
+        if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe]) == nextSeq) {
             fprintf(stderr, "Write a packet\n");
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                 fprintf(stderr, "End of file return, close connection\n");
@@ -105,10 +107,7 @@ void reading_loop(int sfd, FILE * outFile) {
                 fprintf(stderr, "Write out, nb wrotte bytes : %d\n", (int) nbByteW);
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
-                indWinRe++;
-                if(indWinRe > MAX_WINDOW_SIZE) {
-                    indWinRe = 0;
-                }
+                increment_seqnum(&nextSeq);
                 winFree++;
             }
         }

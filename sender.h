@@ -15,9 +15,11 @@
 #include "socket.h"
 #include "packet_interface.h"
 
-// > 2 * Latence (2000)
-#define TIME_OUT 5000
+// > 2 * Latence (2) second
+#define TIME_OUT 5
 
 void writing_loop(const int sfd, FILE * inFile);
+
+void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int winSize);
 
 #endif // SENDER_H_INCLUDED
