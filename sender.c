@@ -3,6 +3,8 @@
 #include "packet_debug.h"
 
 int main(int argc, char * argv[]) {
+    fprintf(stderr, "Sender Launch : number args '%d'\n", argc);
+
     FILE * f = stdin;
     char openMode[] = "r";
 
@@ -47,7 +49,7 @@ void writing_loop(const int sfd, FILE * inFile) {
     // Packets buffers
     const int moduloWindows = MAX_WINDOW_SIZE + 1;
     pkt_t * pktBuffer[moduloWindows];
-    for (int i=0; i<moduloWindows;i++)
+    for(int i = 0; i < moduloWindows; i++)
         pktBuffer[i] = NULL;
 
     char fileReadBuf[MAX_PAYLOAD_SIZE];
@@ -64,8 +66,10 @@ void writing_loop(const int sfd, FILE * inFile) {
     int allWritten = 1;
     fd_set selSo;
 
+    FD_ZERO(&selSo);
+
     while(!eof) {
-        FD_ZERO(&selSo);
+
         FD_SET(fileno(inFile), &selSo);
         FD_SET(sfd, &selSo);
 
@@ -75,6 +79,7 @@ void writing_loop(const int sfd, FILE * inFile) {
             fprintf(stderr, "An error occured on select %s\n", strerror(errno));
             break;
         }
+
         if(FD_ISSET(fileno(inFile), &selSo)) {
             if(winSize > 0 && allWritten) {
                 nbByteRe = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
@@ -104,19 +109,20 @@ void writing_loop(const int sfd, FILE * inFile) {
                     allWritten = 0;
                     lastSeqnum++;
                 }
-            } else {
-                for(int i = 0; i < MAX_WINDOW_SIZE; i++){
-                    if(pktBuffer[i] != NULL && time(NULL) > (pkt_get_timestamp(pktBuffer[i]) + 5)){
-                        size_t tmps = sizeMaxPkt;
-                        pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
-                        int nbWrite = write(sfd, socketWriteBuf, tmps);
-                        if (nbWrite > 0){
-                            eof = 1;
-                        }
-                        fprintf(stderr, "Resend nb byte : %d", nbWrite);
-                        pkt_set_timestamp(pktBuffer[i], timestamp());
-                    }
+            }
+        }
+
+        for(int i = 0; i < MAX_WINDOW_SIZE; i++) {
+            if(pktBuffer[i] != NULL && time(NULL) > (pkt_get_timestamp(pktBuffer[i]) + 5)) {
+                size_t tmps = sizeMaxPkt;
+                pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
+                int nbWrite = write(sfd, socketWriteBuf, tmps);
+                if(nbWrite < 0 || allWritten == 0) {
+                    fprintf(stderr, "Client leave, finish Connection!\n");
+                    eof = 1;
                 }
+                fprintf(stderr, "Resend nb byte : %d\n", nbWrite);
+                pkt_set_timestamp(pktBuffer[i], timestamp());
             }
         }
 

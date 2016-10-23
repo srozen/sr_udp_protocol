@@ -84,8 +84,10 @@ void reading_loop(int sfd, FILE * outFile) {
                 if (seqnumAck + 1 > pkt_get_seqnum(pktRead) || seqnumAck < pkt_get_seqnum(pktRead)-winFree){
                     increment_seqnum(&seqnumAck);
                 }
+                //if (pkt_get_length(pktRead)!=0){
+                     send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
+                //}
 
-                send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
             }
         }
 
