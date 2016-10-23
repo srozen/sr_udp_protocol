@@ -3,12 +3,9 @@
 CC=gcc
 CFLAGS=-std=c99 -Wall -Werror -Wshadow -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all -D_POSIX_C_SOURCE=201112L -D_XOPEN_SOURCE
 LDFLAGS=-lz -L$(HOME)/local/lib -lcunit
-EXEC=test sender receiver unit_test
+EXEC=sender receiver unit_test
 
 all: $(EXEC)
-
-test: test.o packet_implem.o
-	$(CC) -o $@ $^ $(LDFLAGS)
 
 unit_test: unit_test.o functions.o
 	$(CC) -o $@ $^ $(LDFLAGS)
