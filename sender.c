@@ -33,13 +33,7 @@ int main(int argc, char * argv[]) {
     return EXIT_SUCCESS;
 }
 
-void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const uint8_t seqNum, const ptypes_t type, const uint8_t winSize, const uint32_t timestamp) {
-    pkt_set_payload(pkt, fileReadBuf, nbByteRe);
-    pkt_set_seqnum(pkt, seqNum);
-    pkt_set_type(pkt, type);
-    pkt_set_window(pkt, winSize);
-    pkt_set_timestamp(pkt, timestamp);
-}
+
 
 void writing_loop(const int sfd, FILE * inFile) {
     fprintf(stderr, "Begin loop to write in socket\n");
@@ -58,29 +52,32 @@ void writing_loop(const int sfd, FILE * inFile) {
     char socketWriteBuf[sizeMaxPkt];
 
     uint8_t seqnum = 0; //First seqnum must be 0
-    uint8_t winSize = 1;
+    uint8_t winSize = 1; //Window size must be 1 at begining
     uint8_t lastSeqnum = 0;
 
+    int infd = fileno(inFile);
     int eof = 0;
-    int allWritten = 1;
-    fd_set selSo;
-    fd_set selSoWri;
 
-    FD_ZERO(&selSo);
-    FD_ZERO(&selSoWri);
+    int allWritten = 1;
+
+    fd_set selRe;
+    fd_set selWri;
+
+    FD_ZERO(&selRe);
+    FD_ZERO(&selWri);
 
     while(!eof) {
 
-        FD_SET(fileno(inFile), &selSo);
-        FD_SET(sfd, &selSo);
-        FD_SET(sfd, &selSoWri);
+        FD_SET(infd, &selRe);
+        FD_SET(sfd, &selRe);
+        FD_SET(sfd, &selWri);
 
-        if((select(sfd + 1, &selSo, &selSoWri, NULL, NULL)) < 0) {
+        if((select(sfd + 1, &selRe, &selWri, NULL, NULL)) < 0) {
             fprintf(stderr, "An error occured on select %s (writing_loop)\n", strerror(errno));
             break;
         }
 
-        if(FD_ISSET(fileno(inFile), &selSo)) {
+        if(FD_ISSET(infd, &selRe)) {
             if(winSize > 0 && allWritten) {
                 ssize_t nbByteReFi = read(fileno(inFile), fileReadBuf, MAX_PAYLOAD_SIZE);
                 pkt_t * pktWr = pkt_new();
@@ -112,34 +109,35 @@ void writing_loop(const int sfd, FILE * inFile) {
             }
         }
 
-        for(int i = 0; i < MAX_WINDOW_SIZE; i++) {
-            if(pktBuffer[i] != NULL && time(NULL) > (pkt_get_timestamp(pktBuffer[i]) + 5)) {
-                size_t tmps = sizeMaxPkt;
-                pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
-                int nbWrite = write(sfd, socketWriteBuf, tmps);
-                if(nbWrite < 0) {
-                    fprintf(stderr, "Client leave, finish Connection!\n");
-                    eof = 1;
-                }
-                fprintf(stderr, "Resend nb byte : %d\n", nbWrite);
-                pkt_set_timestamp(pktBuffer[i], timestamp());
+        // WHEN SOCKET RECEIVE A ACK
+        if(FD_ISSET(sfd, &selRe)) {
+            ssize_t nbByteReSo = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
+
+            if(nbByteReSo < 0) {
+                fprintf(stderr, "An error occured reading ACK in socket : %s\n", strerror(errno));
+            }
+            pkt_decode(socketReadBuf, nbByteReSo, pktRe); // Create new packet from buffer
+            pkt_debug(pktRe); // Debug ACK
+            winSize = pkt_get_window(pktRe);
+
+            uint8_t seq = pkt_get_seqnum(pktRe);
+            free_packet_buffer(pktBuffer, seq, pktBufSize, winSize);
+
+            if(pkt_get_seqnum(pktRe) == lastSeqnum) {
+                eof = 1;
             }
         }
 
-        if(FD_ISSET(sfd, &selSo)) {
-            ssize_t nbByteReSo = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
+        for(int i = 0; i < MAX_WINDOW_SIZE; i++) {
+            if(pktBuffer[i] != NULL && timestamp() > (pkt_get_timestamp(pktBuffer[i]) + TIME_OUT)) {
+                size_t tmps = sizeMaxPkt;
+                pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
+                int nbWrite = write(sfd, socketWriteBuf, tmps);
+                fprintf(stderr, "Resend nb byte : %d\n", nbWrite);
+                pkt_set_timestamp(pktBuffer[i], timestamp());
 
-            if(nbByteReSo > 0) { // If something has been read from SFD
-                pkt_decode(socketReadBuf, nbByteReSo, pktRe); // Create new packet from buffer
-                pkt_debug(pktRe); // Debug ACK
-                winSize = pkt_get_window(pktRe);
-
-                // Free packets
-                uint8_t seq = pkt_get_seqnum(pktRe);
-
-                free_packet_buffer(pktBuffer, seq, pktBufSize, winSize);
-
-                if(pkt_get_seqnum(pktRe) == lastSeqnum) {
+                if(nbWrite < 0) {
+                    fprintf(stderr, "Client leave, finish Connection!\n");
                     eof = 1;
                 }
             }
@@ -147,6 +145,14 @@ void writing_loop(const int sfd, FILE * inFile) {
     }
 
     pkt_del(pktRe);
+}
+
+void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const uint8_t seqNum, const ptypes_t type, const uint8_t winSize, const uint32_t timestamp) {
+    pkt_set_payload(pkt, fileReadBuf, nbByteRe);
+    pkt_set_seqnum(pkt, seqNum);
+    pkt_set_type(pkt, type);
+    pkt_set_window(pkt, winSize);
+    pkt_set_timestamp(pkt, timestamp);
 }
 
 void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int winSize) {
@@ -167,5 +173,9 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int win
         }
     }
 }
+
+//void timeout_check(pkt_t ** pktBuf, int pktBufSize){
+
+//}
 
 

@@ -33,5 +33,11 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
         *f = fopen(file, openMode);
     }
     return EXIT_SUCCESS;
+}
 
+uint32_t timestamp() {
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    long mill = (now.tv_sec*1000 + now.tv_usec/1000);
+    return (uint32_t)(mill%1000000000);
 }

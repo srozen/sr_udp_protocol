@@ -8,7 +8,6 @@
 #include <netinet/in.h>
 #include <memory.h>
 #include <stdio.h>
-#include <time.h>
 
 /* Raccourci pour struct pkt */
 typedef struct pkt pkt_t;
@@ -25,6 +24,8 @@ typedef enum {
 #define MAX_WINDOW_SIZE 31
 /* Taille maximale du numéro de séquence */
 #define MAX_SEQNUM 255
+/* Taille du header */
+#define HEADER_SIZE 12
 
 uint32_t  compute_crc(const pkt_t *pkt);
 
@@ -124,10 +125,7 @@ void increment_seqnum(uint8_t * seqnum);
  */
 void decrement_seqnum(uint8_t * seqnum);
 
-/*
- * Return a timestamp from system time
- */
-uint32_t timestamp();
+
 
 #endif  /* __PACKET_INTERFACE_H_ */
 
