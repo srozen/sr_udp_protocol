@@ -65,15 +65,18 @@ void writing_loop(const int sfd, FILE * inFile) {
     int eof = 0;
     int allWritten = 1;
     fd_set selSo;
+    fd_set selSoWri;
 
     FD_ZERO(&selSo);
+    FD_ZERO(&selSoWri);
 
     while(!eof) {
 
         FD_SET(fileno(inFile), &selSo);
         FD_SET(sfd, &selSo);
+        FD_SET(sfd, &selSoWri);
 
-        int sct = select(sfd + 1, &selSo, NULL, NULL, NULL);
+        int sct = select(sfd + 1, &selSo, &selSoWri, NULL, NULL);
 
         if(sct < 0) {
             fprintf(stderr, "An error occured on select %s\n", strerror(errno));
