@@ -8,6 +8,8 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
+#define USAGE "Usage:\n-f FILE    Specify a file to send as data, or to store data in it (optional).\nHOSTNAME   IPv6 address or hostname to reach.\n PORTNUM    Port number.\n"
+
 /* Initialize @address, @port and @f from user input
  * @f : File accessor if a filename is provided by the user
  */
