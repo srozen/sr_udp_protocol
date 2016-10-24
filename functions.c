@@ -1,6 +1,10 @@
 #include "functions.h"
 
 int read_args(int argc, char * argv[], char** address, int * port, FILE** f, char * openMode) {
+    if(argc < 3){
+        fprintf(stderr, USAGE);
+        return EXIT_FAILURE;
+    }
     int opt;
     char * file = NULL;
     while((opt = getopt(argc, argv, "f:")) != -1) {
@@ -10,19 +14,13 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
             strcpy(file, optarg);
             break;
         default:
-            fprintf(stderr, "Usage:\n"
-                    "-f FILE    Specify a file to send as data, or to store data in it (optional).\n"
-                    "HOSTNAME   IPv6 address or hostname to reach.\n"
-                    "PORTNUM    Port number.\n");
+            fprintf(stderr, USAGE);
             return EXIT_FAILURE;
         }
     }
     // Assign address and port
     if(argv[optind] == NULL || argv[optind + 1] == NULL){
-        fprintf(stderr, "Usage:\n"
-                "-f FILE    Specify a file to send as data, or to store data in it (optional).\n"
-                "HOSTNAME   IPv6 address or hostname to reach.\n"
-                "PORTNUM    Port number.\n");
+        fprintf(stderr, USAGE);
         return EXIT_FAILURE;
     }
     char* buff = argv[optind];
