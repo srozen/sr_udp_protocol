@@ -17,7 +17,7 @@
 #include "socket.h"
 #include "packet_interface.h"
 
-// > 2 * Latence (2000) millisecond
+// > 2 * Latence (2000) millisecond. min=4000, add 300 for traetement of packet
 #define TIME_OUT 4300
 
 #define NB_LAUNCH_EOF 3
@@ -31,5 +31,7 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
 void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int winSize);
 
 void timeout_check(const size_t sizeMaxPkt, const int sfd,pkt_t ** pktBuf, int pktBufSize, int * eof, int * timeEof);
+
+int can_send_packet(uint8_t ackSeqnum, uint8_t seqnum, int winSize);
 
 #endif // SENDER_H_INCLUDED

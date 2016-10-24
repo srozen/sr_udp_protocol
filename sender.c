@@ -50,10 +50,10 @@ int writing_loop(const int sfd, FILE * inFile) {
     for(int i = 0; i < pktBufSize; i++)
         pktBuffer[i] = NULL;
 
-    uint8_t seqnum = 0; //First seqnum must be 0
+    uint8_t nextSeqnum = 0; // First seqnum must be 0, correspond to the next seqnum to send.
     uint8_t winSize = 1; //Window size must be 1 at begining
-    uint8_t lastSeqnum = seqnum; //Next seqnum
-
+    uint8_t ackSeqnum = MAX_SEQNUM; // seqnum of last Ack receive
+    int lastSeqnum = -1; // seqnum of eof
 
     int nfsd = sfd;
     if(infd > nfsd) {
@@ -81,23 +81,23 @@ int writing_loop(const int sfd, FILE * inFile) {
 
         /*When you can read in file and the windows size is not empty,
           also if the end of file was not send */
-        if(FD_ISSET(infd, &selRe) && winSize > 0 && timeEof == NB_LAUNCH_EOF) {
+        if(FD_ISSET(infd, &selRe) && timeEof == NB_LAUNCH_EOF && can_send_packet(ackSeqnum, nextSeqnum, winSize) == 0) {
+
+            fprintf(stderr,"Prepare to send a new packet, lastSeq = %d, seqnumToSend = %d, winSie = %d\n",ackSeqnum,nextSeqnum, winSize);
             // Read from inFile
             char fileReadBuf[MAX_PAYLOAD_SIZE];
             ssize_t nbByteRe = read(infd, fileReadBuf, MAX_PAYLOAD_SIZE);
 
             // Packet initialization + encode
             pkt_t * pktWr = pkt_new();
-            init_pkt(pktWr, fileReadBuf, nbByteRe, seqnum, PTYPE_DATA, winSize, timestamp());
+            init_pkt(pktWr, fileReadBuf, nbByteRe, nextSeqnum, PTYPE_DATA, winSize, timestamp());
 
             if(send_new_packet(sfd, pktBufSize, sizeMaxPkt, pktBuffer, pktWr, nbByteRe) == 0) {
-                winSize--;
-                increment_seqnum(&seqnum);
-                lastSeqnum = pkt_get_seqnum(pktWr);
+                increment_seqnum(&nextSeqnum);
 
                 if(nbByteRe == 0) { // End of file
                     timeEof--;
-                    lastSeqnum++;
+                    lastSeqnum = pkt_get_seqnum(pktWr);
                 }
             } else {
                 pkt_del(pktWr);
@@ -121,8 +121,8 @@ int writing_loop(const int sfd, FILE * inFile) {
             pkt_debug(pktRe); // Debug ACK
             winSize = pkt_get_window(pktRe); // take the windows of receiver
 
-            uint8_t seq = pkt_get_seqnum(pktRe);
-            free_packet_buffer(pktBuffer, seq, pktBufSize, winSize);
+            ackSeqnum = pkt_get_seqnum(pktRe);
+            free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize, winSize);
 
             if(pkt_get_seqnum(pktRe) == lastSeqnum) {
                 eof = 1;
@@ -165,18 +165,18 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
     pkt_set_timestamp(pkt, timestamp);
 }
 
-void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int winSize) {
-    uint8_t cpSeqnum = seqnum;
-    decrement_seqnum(&seqnum);
+void free_packet_buffer(pkt_t ** pktBuf, uint8_t nextSeqnum, int pktBufSize, int winSize) {
+    uint8_t cpSeqnum = nextSeqnum;
+    decrement_seqnum(&nextSeqnum);
 
     uint8_t lowInterv1 = 0;
-    uint8_t highInterv1 = seqnum;
+    uint8_t highInterv1 = nextSeqnum;
     int needInt2 = 0;
 
     uint8_t lowInterv2 = 0;
     uint8_t highInterv2 = MAX_SEQNUM;
 
-    if(seqnum >= winSize) {
+    if(nextSeqnum >= winSize) {
         lowInterv1 = cpSeqnum - winSize;
     }
 
@@ -187,14 +187,14 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int win
     }
 
     int finish = 0;
-    while(!finish && pktBuf[seqnum % pktBufSize] != NULL) {
+    while(!finish && pktBuf[nextSeqnum % pktBufSize] != NULL) {
         finish = 1;
-        fprintf(stderr, "I free buffer number %d\n", seqnum % pktBufSize);
-        pkt_del(pktBuf[seqnum % pktBufSize]);
-        pktBuf[seqnum % pktBufSize] = NULL; //3
-        decrement_seqnum(&seqnum); //2
-        if(pktBuf[seqnum % pktBufSize] != NULL) {
-            cpSeqnum = pkt_get_seqnum(pktBuf[seqnum % pktBufSize]);
+        fprintf(stderr, "I free buffer number %d\n", nextSeqnum % pktBufSize);
+        pkt_del(pktBuf[nextSeqnum % pktBufSize]);
+        pktBuf[nextSeqnum % pktBufSize] = NULL; //3
+        decrement_seqnum(&nextSeqnum); //2
+        if(pktBuf[nextSeqnum % pktBufSize] != NULL) {
+            cpSeqnum = pkt_get_seqnum(pktBuf[nextSeqnum % pktBufSize]);
             if(((cpSeqnum >= lowInterv1 && cpSeqnum <= highInterv1) || (needInt2 == 1 && cpSeqnum >= lowInterv2 && cpSeqnum <= highInterv2))) {
                 finish = 0;
             }
@@ -229,4 +229,21 @@ void timeout_check(const size_t sizeMaxPkt, const int sfd, pkt_t ** pktBuf, int 
     }
 }
 
+int can_send_packet(uint8_t ackSeqnum, uint8_t nextSeqnum, int winSize){
+
+    if ( (((int)ackSeqnum) + winSize) > MAX_SEQNUM) {
+        if (nextSeqnum >= ackSeqnum){
+            return 0;
+        }
+        if ((winSize - (MAX_SEQNUM - ackSeqnum))>nextSeqnum ){
+            return 0;
+        }
+        return 1;
+    } else {
+        if (nextSeqnum > ackSeqnum + winSize -1 ){
+            return 1;
+        }
+    }
+    return 0;
+}
 

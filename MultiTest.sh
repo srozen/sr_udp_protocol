@@ -8,7 +8,7 @@ for ((i=0 ; 20 - $i ; i++)); do
 	test=$!
 	sleep 20
 	if kill -0 $test &> /dev/null ; then
-		kill -9 $test
+		kill -2 $test
 		((failTest++))
 	else
 		if ! wait $receiver_pid ; then
@@ -21,7 +21,7 @@ done
 
 cleanup()
 {
-    kill -9 $test
+    kill -2 $test
     exit 0
 }
 trap cleanup SIGINT  # Kill les process en arrière plan en cas de ^-C

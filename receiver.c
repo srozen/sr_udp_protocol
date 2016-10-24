@@ -93,12 +93,13 @@ int reading_loop(int sfd, FILE * outFile) {
             if(pktRead != NULL) {
 
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
-                winFree--;
+
 
                 uint8_t seqnumAckCp = seqnumAck;
                 increment_seqnum(&seqnumAckCp);
 
                 if (seqnumAck == pkt_get_seqnum(pktRead)){
+                    winFree--;
                     increment_seqnum(&seqnumAck);
                 }
 
