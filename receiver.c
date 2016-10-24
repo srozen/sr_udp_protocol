@@ -46,7 +46,7 @@ int main(int argc, char * argv[]) {
     return EXIT_SUCCESS;
 }
 
-void reading_loop(int sfd, FILE * outFile) {
+int reading_loop(int sfd, FILE * outFile) {
     fprintf(stderr, "Begin loop to read socket\n");
 
     // init variable
@@ -84,7 +84,7 @@ void reading_loop(int sfd, FILE * outFile) {
 
         if((select(nfsd + 1, &selRe, &selWri, NULL, NULL)) < 0) {
             fprintf(stderr, "An error occured on select %s (reading_loop)\n", strerror(errno));
-            break;
+            return EXIT_FAILURE;
         }
 
         // Look in socket
@@ -123,6 +123,8 @@ void reading_loop(int sfd, FILE * outFile) {
             }
         }
     }
+
+    return EXIT_SUCCESS;
 }
 
 void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp) {
@@ -139,7 +141,7 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
 
     if(statusEnc == PKT_OK) {
         int nbByteAck = write(sfd, bufEnc, lenBuf);
-        fprintf(stderr, "Ack send, number byte write : %d\n", nbByteAck);
+        fprintf(stderr, "Ack send seqnum %d, number byte write : %d\n", seqnum,nbByteAck);
     } else {
         fprintf(stderr, "Error encoding ack, number error : %d\n", statusEnc);
     }
