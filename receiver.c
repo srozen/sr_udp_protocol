@@ -55,28 +55,31 @@ void reading_loop(int sfd, FILE * outFile) {
 
     uint8_t nextSeq = 0; // Next seqnum waiting
     uint8_t winFree = windowSize; // nb free place in window
+    uint8_t indWinRe = nextSeq % windowSize;
 
     uint8_t seqnumAck = 0;
 
     int outfd = fileno(outFile);
     int eof = 0;
 
-    fd_set seSoRe;
+    fd_set selRe;
+    //fd_set selWri;
 
-    FD_ZERO(&seSoRe);
+    FD_ZERO(&selRe);
+    //FD_ZERO(&selRe);
 
     while(!eof) {
 
-        FD_SET(sfd, &seSoRe);
-        FD_SET(outfd, &seSoRe);
+        FD_SET(sfd, &selRe);
+        FD_SET(outfd, &selRe);
 
-        if((select(sfd + 1, &seSoRe, NULL, NULL, NULL)) < 0) {
+        if((select(sfd + 1, &selRe, NULL, NULL, NULL)) < 0) {
             fprintf(stderr, "An error occured on select %s (reading_loop)\n", strerror(errno));
             break;
         }
 
         // Look in socket
-        if(FD_ISSET(sfd, &seSoRe) && winFree > 0) {
+        if(FD_ISSET(sfd, &selRe) && winFree > 0) {
             pkt_t * pktRead = read_packet(sizeMaxPkt, sfd);
             if(pktRead != NULL) {
 
@@ -92,8 +95,6 @@ void reading_loop(int sfd, FILE * outFile) {
             }
         }
 
-        uint8_t indWinRe = nextSeq % windowSize;
-
         // If next pkt can be write
         if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe]) == nextSeq) {
             fprintf(stderr, "Write a packet\n");
@@ -108,6 +109,7 @@ void reading_loop(int sfd, FILE * outFile) {
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
                 increment_seqnum(&nextSeq);
+                indWinRe = nextSeq % windowSize;
                 winFree++;
             }
         }

@@ -39,7 +39,7 @@ void writing_loop(const int sfd, FILE * inFile) {
     fprintf(stderr, "Begin loop to write in socket\n");
 
     pkt_t * pktRe = pkt_new();
-    const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + sizeof(pktRe) + 4;
+    const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + HEADER_SIZE;
 
     // Packets buffers
     const int pktBufSize = MAX_WINDOW_SIZE + 1;
@@ -53,7 +53,7 @@ void writing_loop(const int sfd, FILE * inFile) {
 
     uint8_t seqnum = 0; //First seqnum must be 0
     uint8_t winSize = 1; //Window size must be 1 at begining
-    uint8_t lastSeqnum = 0;
+    uint8_t lastSeqnum = seqnum;
 
     int infd = fileno(inFile);
     int eof = 0;
@@ -128,20 +128,7 @@ void writing_loop(const int sfd, FILE * inFile) {
             }
         }
 
-        for(int i = 0; i < MAX_WINDOW_SIZE; i++) {
-            if(pktBuffer[i] != NULL && timestamp() > (pkt_get_timestamp(pktBuffer[i]) + TIME_OUT)) {
-                size_t tmps = sizeMaxPkt;
-                pkt_encode(pktBuffer[i], socketWriteBuf, &tmps);
-                int nbWrite = write(sfd, socketWriteBuf, tmps);
-                fprintf(stderr, "Resend nb byte : %d\n", nbWrite);
-                pkt_set_timestamp(pktBuffer[i], timestamp());
-
-                if(nbWrite < 0) {
-                    fprintf(stderr, "Client leave, finish Connection!\n");
-                    eof = 1;
-                }
-            }
-        }
+        timeout_check(pktBuffer, sfd, pktBufSize, &eof);
     }
 
     pkt_del(pktRe);
@@ -174,8 +161,24 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int win
     }
 }
 
-//void timeout_check(pkt_t ** pktBuf, int pktBufSize){
+void timeout_check(pkt_t ** pktBuf, const int sfd, int pktBufSize, int * eof) {
+    for(int i = 0; i < pktBufSize; i++) {
+        if(pktBuf[i] != NULL && timestamp() > (pkt_get_timestamp(pktBuf[i]) + TIME_OUT)) {
+            const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + HEADER_SIZE;
+            char socketWriteBuf[sizeMaxPkt];
 
-//}
+            size_t tmps = sizeMaxPkt;
+            pkt_encode(pktBuf[i], socketWriteBuf, &tmps);
+            int nbWrite = write(sfd, socketWriteBuf, tmps);
+            fprintf(stderr, "Resend nb byte : %d\n", nbWrite);
+            pkt_set_timestamp(pktBuf[i], timestamp());
+
+            if(nbWrite < 0) {
+                fprintf(stderr, "Client leave, finish Connection!\n");
+                *eof = 1;
+            }
+        }
+    }
+}
 
 

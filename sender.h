@@ -24,4 +24,6 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
 
 void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int winSize);
 
+void timeout_check(pkt_t ** pktBuf,const int sfd , int pktBufSize, int * eof);
+
 #endif // SENDER_H_INCLUDED
