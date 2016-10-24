@@ -117,15 +117,19 @@ int writing_loop(const int sfd, FILE * inFile) {
             }
 
             pkt_t * pktRe = pkt_new();
-            pkt_decode(socketReadBuf, nbByteReSo, pktRe); // Create new packet from buffer
-            pkt_debug(pktRe); // Debug ACK
-            winSize = pkt_get_window(pktRe); // take the windows of receiver
+            int decodeRet = pkt_decode(socketReadBuf, nbByteReSo, pktRe); // Create new packet from buffer
+            if (decodeRet != PKT_OK){
+                fprintf(stderr,"Error in decode of ack, error code = %d\n", decodeRet);
+            } else {
+                pkt_debug(pktRe); // Debug ACK
+                winSize = pkt_get_window(pktRe); // take the windows of receiver
 
-            ackSeqnum = pkt_get_seqnum(pktRe);
-            free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize, winSize);
+                ackSeqnum = pkt_get_seqnum(pktRe);
+                free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize, winSize);
 
-            if(pkt_get_seqnum(pktRe) == lastSeqnum) {
-                eof = 1;
+                if(pkt_get_seqnum(pktRe) == lastSeqnum) {
+                    eof = 1;
+                }
             }
             pkt_del(pktRe);
         }
