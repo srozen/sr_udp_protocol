@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
         return EXIT_FAILURE;
     }
 
-    if(writing_loop(sfd, inFile) != EXIT_SUCCESS){
+    if(writing_loop(sfd, inFile) != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
 
@@ -167,19 +167,37 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
 
 void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int winSize) {
     uint8_t cpSeqnum = seqnum;
-
     decrement_seqnum(&seqnum);
+
+    uint8_t lowInterv1 = 0;
+    uint8_t highInterv1 = seqnum;
+    int needInt2 = 0;
+
+    uint8_t lowInterv2 = 0;
+    uint8_t highInterv2 = MAX_SEQNUM;
+
+    if(seqnum >= winSize) {
+        lowInterv1 = cpSeqnum - winSize;
+    }
+
+    if(winSize > cpSeqnum) {
+        needInt2 = 1;
+        int back = winSize - cpSeqnum + 1;
+        lowInterv2 = MAX_SEQNUM - back;
+    }
+
     int finish = 0;
     while(!finish && pktBuf[seqnum % pktBufSize] != NULL) {
-
+        finish = 1;
         fprintf(stderr, "I free buffer number %d\n", seqnum % pktBufSize);
         pkt_del(pktBuf[seqnum % pktBufSize]);
-        pktBuf[seqnum % pktBufSize] = NULL;
-        decrement_seqnum(&seqnum);
-
-        if(cpSeqnum - winSize > seqnum ||
-                (cpSeqnum < seqnum && (MAX_SEQNUM - winSize + cpSeqnum < seqnum))) {
-            finish = 1;
+        pktBuf[seqnum % pktBufSize] = NULL; //3
+        decrement_seqnum(&seqnum); //2
+        if(pktBuf[seqnum % pktBufSize] != NULL) {
+            cpSeqnum = pkt_get_seqnum(pktBuf[seqnum % pktBufSize]);
+            if(((cpSeqnum >= lowInterv1 && cpSeqnum <= highInterv1) || (needInt2 == 1 && cpSeqnum >= lowInterv2 && cpSeqnum <= highInterv2))) {
+                finish = 0;
+            }
         }
     }
 }
@@ -194,10 +212,10 @@ void timeout_check(const size_t sizeMaxPkt, const int sfd, pkt_t ** pktBuf, int 
             pkt_encode(pktBuf[i], socketWriteBuf, &tmps);
             int nbWrite = write(sfd, socketWriteBuf, tmps);
             pkt_set_timestamp(pktBuf[i], timestamp());
-            fprintf(stderr, "Resend nb byte : %d\n", nbWrite);
-            if (pkt_get_length(pktBuf[i]) == 0){
+            fprintf(stderr, "Resend packet, seqnum = %d, nb byte : %d\n", pkt_get_seqnum(pktBuf[i]) , nbWrite);
+            if(pkt_get_length(pktBuf[i]) == 0) {
                 (*timeEof)--;
-                if (*timeEof <= 0){
+                if(*timeEof <= 0) {
                     fprintf(stderr, "Not respont of client, finish connection!\n");
                     *eof = 1;
                 }

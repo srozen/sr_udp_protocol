@@ -60,7 +60,7 @@ int reading_loop(int sfd, FILE * outFile) {
     uint8_t winFree = windowSize; // nb free place in window
     uint8_t indWinRe = nextSeq % windowSize;
 
-    uint8_t seqnumAck = 0;
+    uint8_t seqnumAck = 0; // seqNum waiting
 
     int outfd = fileno(outFile);
     int nfsd = sfd;
@@ -95,7 +95,10 @@ int reading_loop(int sfd, FILE * outFile) {
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
                 winFree--;
 
-                if (seqnumAck + 1 > pkt_get_seqnum(pktRead) || seqnumAck < pkt_get_seqnum(pktRead)-winFree){
+                uint8_t seqnumAckCp = seqnumAck;
+                increment_seqnum(&seqnumAckCp);
+
+                if (seqnumAck == pkt_get_seqnum(pktRead)){
                     increment_seqnum(&seqnumAck);
                 }
 
