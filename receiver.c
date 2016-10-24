@@ -39,6 +39,9 @@ int main(int argc, char * argv[]) {
     reading_loop(sfd, outFile);
 
     close(sfd);
+    if (outFile!=stdout){
+        close(fileno(outFile));
+    }
     fprintf(stderr, "Exiting with success! (Receiver)\n");
     return EXIT_SUCCESS;
 }
@@ -60,20 +63,26 @@ void reading_loop(int sfd, FILE * outFile) {
     uint8_t seqnumAck = 0;
 
     int outfd = fileno(outFile);
+    int nfsd = sfd;
+    if (outfd>nfsd) {
+        nfsd = outfd;
+    }
     int eof = 0;
 
     fd_set selRe;
-    //fd_set selWri;
+    fd_set selWri;
 
     FD_ZERO(&selRe);
-    //FD_ZERO(&selRe);
+    FD_ZERO(&selWri);
 
     while(!eof) {
 
         FD_SET(sfd, &selRe);
-        FD_SET(outfd, &selRe);
+        FD_SET(sfd, &selWri);
+        FD_SET(outfd, &selWri);
 
-        if((select(sfd + 1, &selRe, NULL, NULL, NULL)) < 0) {
+
+        if((select(nfsd + 1, &selRe, &selWri, NULL, NULL)) < 0) {
             fprintf(stderr, "An error occured on select %s (reading_loop)\n", strerror(errno));
             break;
         }

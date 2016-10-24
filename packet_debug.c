@@ -1,7 +1,3 @@
-//
-// Created by srozen on 19/10/16.
-//
-
 #include "packet_debug.h"
 
 void pkt_debug(pkt_t * pkt){
