@@ -97,7 +97,8 @@ int writing_loop(const int sfd, FILE * inFile) {
 
                 if(nbByteRe == 0) { // End of file
                     timeEof--;
-                    lastSeqnum = pkt_get_seqnum(pktWr);
+                    lastSeqnum = nextSeqnum;
+                    fprintf(stderr, "End of file send for firstTime (lastSeqnum = %d)\n", lastSeqnum);
                 }
             } else {
                 pkt_del(pktWr);
@@ -130,6 +131,7 @@ int writing_loop(const int sfd, FILE * inFile) {
                 winSize = pkt_get_window(pktRe); // take the windows of receiver
 
                 if(ackSeqnum == lastSeqnum) {
+                    fprintf(stderr, "Ack of end file receive, close connection.\n");
                     eof = 1;
                 }
             }
@@ -172,7 +174,6 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
 }
 
 
-//TODO Simplify, remove winSize and work with pktBufSize to clean correctly
 void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize) {
 
     const uint8_t cpSeq = ackSeqnum;

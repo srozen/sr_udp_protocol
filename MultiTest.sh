@@ -3,20 +3,15 @@
 failTest=0
 succesTest=0
 
-for ((i=0 ; 20 - $i ; i++)); do
-	./MyTest.sh &
+for ((i=0 ; 10 - $i ; i++)); do
+	./MyTest.sh
 	test=$!
-	sleep 20
-	if kill -0 $test &> /dev/null ; then
-		kill -2 $test
+	result=$?
+	if [ $result -eq 0 ] ; then
+    		((succesTest++))
+  	else
 		((failTest++))
-	else
-		if ! wait $receiver_pid ; then
-    			((failTest++))
-  		else
-			((succesTest++))
-		fi	
-	fi
+	fi	
 done
 
 cleanup()
