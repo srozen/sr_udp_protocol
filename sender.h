@@ -28,7 +28,7 @@ int send_new_packet(const int sfd, const int pktBufSize, const size_t sizeMaxPkt
 
 void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const uint8_t seqNum, const ptypes_t type, const uint8_t winSize, const uint32_t timestamp);
 
-void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize, int winSize);
+void free_packet_buffer(pkt_t ** pktBuf, uint8_t seqnum, int pktBufSize);
 
 void timeout_check(const size_t sizeMaxPkt, const int sfd,pkt_t ** pktBuf, int pktBufSize, int * eof, int * timeEof);
 
