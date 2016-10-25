@@ -57,7 +57,7 @@ int reading_loop(int sfd, FILE * outFile) {
         bufPkt[i] = NULL;
 
     uint8_t nextSeq = 0; // Next seqnum waiting to write
-    uint8_t winFree = windowSize; // nb free place in window
+    uint8_t winFree = MAX_WINDOW_SIZE; // nb free place in window
     uint8_t indWinRe = nextSeq % windowSize;
 
     uint8_t seqnumAck = 0; // seqNum waiting to read in socket
@@ -94,19 +94,20 @@ int reading_loop(int sfd, FILE * outFile) {
 
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
 
+                uint8_t cpseq = seqnumAck;
+
                 if (seqnumAck == pkt_get_seqnum(pktRead)){
-                    winFree--;
-                    increment_seqnum(&seqnumAck);
+                    increment_seqnum(&cpseq);
                 }
 
-                send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
+                send_ack(sfd, cpseq, winFree, pkt_get_timestamp(pktRead));
 
-                fprintf(stderr, "I'm waiting packet number %d to write in file (index = %d)\n",nextSeq, indWinRe);
+                fprintf(stderr, "I'm waiting packet number %d to write in file (index = %d)\n",seqnumAck, indWinRe);
             }
         }
 
         // If next pkt can be write
-        if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe]) == nextSeq) {
+        if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe]) == seqnumAck) {
             fprintf(stderr, "Write a packet\n");
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                 fprintf(stderr, "End of file return, close connection\n");
@@ -118,9 +119,8 @@ int reading_loop(int sfd, FILE * outFile) {
                 fprintf(stderr, "Write out, nb wrotte bytes : %d\n", (int) nbByteW);
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
-                increment_seqnum(&nextSeq);
-                indWinRe = nextSeq % windowSize;
-                winFree++;
+                increment_seqnum(&seqnumAck);
+                indWinRe = seqnumAck % windowSize;
             }
         }
     }
@@ -142,7 +142,7 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
 
     if(statusEnc == PKT_OK) {
         int nbByteAck = write(sfd, bufEnc, lenBuf);
-        fprintf(stderr, "Ack send seqnum %d, number byte write : %d\n", seqnum,nbByteAck);
+        fprintf(stderr, "Ack send seqnum = %d, window = %d, number byte write : %d\n", seqnum,window,nbByteAck);
     } else {
         fprintf(stderr, "Error encoding ack, number error : %d\n", statusEnc);
     }
