@@ -56,11 +56,11 @@ int reading_loop(int sfd, FILE * outFile) {
     for(int i = 0; i < windowSize; i++)
         bufPkt[i] = NULL;
 
-    uint8_t nextSeq = 0; // Next seqnum waiting
+    uint8_t nextSeq = 0; // Next seqnum waiting to write
     uint8_t winFree = windowSize; // nb free place in window
     uint8_t indWinRe = nextSeq % windowSize;
 
-    uint8_t seqnumAck = 0; // seqNum waiting
+    uint8_t seqnumAck = 0; // seqNum waiting to read in socket
 
     int outfd = fileno(outFile);
     int nfsd = sfd;
@@ -94,10 +94,6 @@ int reading_loop(int sfd, FILE * outFile) {
 
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
 
-
-                uint8_t seqnumAckCp = seqnumAck;
-                increment_seqnum(&seqnumAckCp);
-
                 if (seqnumAck == pkt_get_seqnum(pktRead)){
                     winFree--;
                     increment_seqnum(&seqnumAck);
@@ -105,6 +101,7 @@ int reading_loop(int sfd, FILE * outFile) {
 
                 send_ack(sfd, seqnumAck, winFree, pkt_get_timestamp(pktRead));
 
+                fprintf(stderr, "I'm waiting packet number %d to write in file (index = %d)\n",nextSeq, indWinRe);
             }
         }
 

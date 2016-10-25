@@ -121,13 +121,13 @@ int writing_loop(const int sfd, FILE * inFile) {
             if (decodeRet != PKT_OK){
                 fprintf(stderr,"Error in decode of ack, error code = %d\n", decodeRet);
             } else {
+
+                ackSeqnum = pkt_get_seqnum(pktRe);
+                free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize, pktBufSize);
                 pkt_debug(pktRe); // Debug ACK
                 winSize = pkt_get_window(pktRe); // take the windows of receiver
 
-                ackSeqnum = pkt_get_seqnum(pktRe);
-                free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize, winSize);
-
-                if(pkt_get_seqnum(pktRe) == lastSeqnum) {
+                if(ackSeqnum == lastSeqnum) {
                     eof = 1;
                 }
             }
@@ -169,18 +169,20 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
     pkt_set_timestamp(pkt, timestamp);
 }
 
-void free_packet_buffer(pkt_t ** pktBuf, uint8_t nextSeqnum, int pktBufSize, int winSize) {
-    uint8_t cpSeqnum = nextSeqnum;
-    decrement_seqnum(&nextSeqnum);
+
+//TODO Simplify, remove winSize and work with pktBufSize to clean correctly
+void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize, int winSize) {
+    uint8_t cpSeqnum = ackSeqnum;
+    decrement_seqnum(&ackSeqnum);
 
     uint8_t lowInterv1 = 0;
-    uint8_t highInterv1 = nextSeqnum;
+    uint8_t highInterv1 = ackSeqnum;
     int needInt2 = 0;
 
     uint8_t lowInterv2 = 0;
     uint8_t highInterv2 = MAX_SEQNUM;
 
-    if(nextSeqnum >= winSize) {
+    if(ackSeqnum >= winSize) {
         lowInterv1 = cpSeqnum - winSize;
     }
 
@@ -191,14 +193,14 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t nextSeqnum, int pktBufSize, int
     }
 
     int finish = 0;
-    while(!finish && pktBuf[nextSeqnum % pktBufSize] != NULL) {
+    while(!finish && pktBuf[ackSeqnum % pktBufSize] != NULL) {
         finish = 1;
-        fprintf(stderr, "I free buffer number %d\n", nextSeqnum % pktBufSize);
-        pkt_del(pktBuf[nextSeqnum % pktBufSize]);
-        pktBuf[nextSeqnum % pktBufSize] = NULL; //3
-        decrement_seqnum(&nextSeqnum); //2
-        if(pktBuf[nextSeqnum % pktBufSize] != NULL) {
-            cpSeqnum = pkt_get_seqnum(pktBuf[nextSeqnum % pktBufSize]);
+        fprintf(stderr, "I free buffer number %d\n", ackSeqnum % pktBufSize);
+        pkt_del(pktBuf[ackSeqnum % pktBufSize]);
+        pktBuf[ackSeqnum % pktBufSize] = NULL; //3
+        decrement_seqnum(&ackSeqnum); //2
+        if(pktBuf[ackSeqnum % pktBufSize] != NULL) {
+            cpSeqnum = pkt_get_seqnum(pktBuf[ackSeqnum % pktBufSize]);
             if(((cpSeqnum >= lowInterv1 && cpSeqnum <= highInterv1) || (needInt2 == 1 && cpSeqnum >= lowInterv2 && cpSeqnum <= highInterv2))) {
                 finish = 0;
             }
