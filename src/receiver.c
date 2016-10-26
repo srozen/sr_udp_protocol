@@ -92,7 +92,7 @@ int reading_loop(int sfd, FILE * outFile) {
             pkt_t * pktRead = read_packet(sizeMaxPkt, sfd);
             if(pktRead != NULL) {
                 if ( bufPkt[pkt_get_seqnum(pktRead) % windowSize] != NULL){
-                    free( bufPkt[pkt_get_seqnum(pktRead) % windowSize]);
+                    pkt_del( bufPkt[pkt_get_seqnum(pktRead) % windowSize]);
                 }
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
 
