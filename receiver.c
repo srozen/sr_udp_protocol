@@ -98,6 +98,7 @@ int reading_loop(int sfd, FILE * outFile) {
 
                 if (seqnumAck == pkt_get_seqnum(pktRead)){
                     increment_seqnum(&cpseq);
+                    //winFree--;
                 }
 
                 send_ack(sfd, cpseq, winFree, pkt_get_timestamp(pktRead));
@@ -121,10 +122,11 @@ int reading_loop(int sfd, FILE * outFile) {
                 bufPkt[indWinRe] = NULL;
                 increment_seqnum(&seqnumAck);
                 indWinRe = seqnumAck % windowSize;
+                //winFree++;
             }
         }
     }
-
+// 8 Novembre interr logique et stru donnée
     return EXIT_SUCCESS;
 }
 

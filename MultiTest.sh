@@ -11,6 +11,7 @@ for ((i=0 ; 10 - $i ; i++)); do
     		((succesTest++))
   	else
 		((failTest++))
+		exit 1
 	fi	
 done
 

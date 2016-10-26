@@ -20,7 +20,7 @@
 // > 2 * Latence (2000) millisecond. min=4000, add 300 for traetement of packet
 #define TIME_OUT 4300
 
-#define NB_LAUNCH_EOF 3
+#define NB_LAUNCH_EOF 5
 
 int writing_loop(const int sfd, FILE * inFile);
 

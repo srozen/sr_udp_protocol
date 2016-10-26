@@ -4,10 +4,10 @@
 rm -f received_file input_file
 
 # Fichier au contenu aléatoire de 512 octets
-dd if=/dev/urandom of=input_file bs=1 count=1222 &> /dev/null
+dd if=/dev/urandom of=input_file bs=1 count=2252 &> /dev/null
 
 # On lance le simulateur de lien avec 20% de pertes et un délais de 100ms
-./link_sim -p 1341 -P 2456 -l 10 -d 100 -R  &> link.log &
+./link_sim -p 1341 -P 2456 -l 30 -d 2000 -R  &> link.log &
 link_pid=$!
 
 # On lance le receiver et capture sa sortie standard

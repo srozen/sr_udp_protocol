@@ -138,6 +138,7 @@ int writing_loop(const int sfd, FILE * inFile) {
             pkt_del(pktRe);
         }
         timeout_check(sizeMaxPkt, sfd, pktBuffer, pktBufSize, &eof, &timeEof);
+        // TODO : if not respond since x second => finish
     }
 
     return EXIT_SUCCESS;
@@ -186,7 +187,7 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize) {
             pkt_del(pktBuf[currenSeq % pktBufSize]);
             pktBuf[currenSeq % pktBufSize] = NULL;
         } else {
-            if(currenSeq < (int)cpSeq && currenSeq>= (int)cpSeq -pktBufSize) {
+            if(currenSeq < (int)cpSeq && currenSeq >= (int)cpSeq - pktBufSize) {
                 fprintf(stderr, "I free buffer number %d, seqnum %d\n", currenSeq % pktBufSize, currenSeq);
                 pkt_del(pktBuf[currenSeq % pktBufSize]);
                 pktBuf[currenSeq % pktBufSize] = NULL;
@@ -201,27 +202,30 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize) {
 
 void timeout_check(const size_t sizeMaxPkt, const int sfd, pkt_t ** pktBuf, int pktBufSize, int * eof, int * timeEof) {
     uint32_t time = timestamp();
+    // TODO make something with nbResend
+    int nbResend = 0;
     for(int i = 0; i < pktBufSize; i++) {
         if(pktBuf[i] != NULL && time > (pkt_get_timestamp(pktBuf[i]) + TIME_OUT)) {
             char socketWriteBuf[sizeMaxPkt];
 
-            size_t tmps = sizeMaxPkt;
-            pkt_encode(pktBuf[i], socketWriteBuf, &tmps);
-            int nbWrite = write(sfd, socketWriteBuf, tmps);
             pkt_set_timestamp(pktBuf[i], timestamp());
+            size_t sizeMaxPktCp = sizeMaxPkt;
+            pkt_encode(pktBuf[i], socketWriteBuf, &sizeMaxPktCp);
+            int nbWrite = write(sfd, socketWriteBuf, sizeMaxPktCp);
             fprintf(stderr, "Resend packet, seqnum = %d, nb byte : %d\n", pkt_get_seqnum(pktBuf[i]), nbWrite);
-            if(pkt_get_length(pktBuf[i]) == 0) {
-                (*timeEof)--;
-                if(*timeEof <= 0) {
-                    fprintf(stderr, "Not respont of client, finish connection!\n");
-                    *eof = 1;
-                }
-            }
             if(nbWrite < 0) {
                 fprintf(stderr, "Client leave, finish Connection!\n");
                 *eof = 1;
+                return;
             }
-
+            if(pkt_get_length(pktBuf[i]) == 0) {
+                (*timeEof)--;
+                if(*timeEof <= 0) {
+                    fprintf(stderr, "Not reponse of client for end of file, finish connection!\n");
+                    *eof = 1;
+                }
+            }
+            nbResend++;
         }
     }
 }
