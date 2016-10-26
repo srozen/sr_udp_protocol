@@ -4,10 +4,10 @@
 rm -f received_file input_file
 
 # Fichier au contenu aléatoire de 512 octets
-dd if=/dev/urandom of=input_file bs=1 count=512 &> /dev/null
+dd if=/dev/urandom of=input_file bs=1 count=2252 &> /dev/null
 
-# On lance le simulateur de lien avec 10% de pertes et un délais de 50ms
-./link_sim -p 1341 -P 2456 -l 10 -d 50 -R  &> link.log &
+# On lance le simulateur de lien avec 40% de pertes et un délais de 2000ms
+./link_sim -p 1341 -P 2456 -l 40 -d 2000 -R  &> link.log &
 link_pid=$!
 
 # On lance le receiver et capture sa sortie standard
@@ -23,7 +23,7 @@ cleanup()
 trap cleanup SIGINT  # Kill les process en arrière plan en cas de ^-C
 
 # On démarre le transfert
-if ! ./sender localhost 1341 < input_file 2> sender.log ; then
+if ! ./sender ::1 1341 < input_file 2> sender.log ; then
   echo "Crash du sender!"
   cat sender.log
   err=1  # On enregistre l'erreur

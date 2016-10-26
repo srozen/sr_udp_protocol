@@ -1,19 +1,19 @@
-
-# Tuto : http://gl.developpez.com/tutoriel/outil/makefile/
 CC=gcc
 CFLAGS=-std=c99 -Wall -Werror -Wshadow -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all -D_POSIX_C_SOURCE=201112L -D_XOPEN_SOURCE
 LDFLAGS=-lz -L$(HOME)/local/lib -lcunit
 EXEC=sender receiver unit_test
+SRCDIR=src/
+OUTDIR=./tests/
 
 all: $(EXEC)
 
-unit_test: unit_test.o functions.o socket.o
+unit_test: $(SRCDIR)unit_test.o $(SRCDIR)functions.o $(SRCDIR)socket.o
+	$(CC) -o $(OUTDIR)$@ $^ $(LDFLAGS)
+
+sender: $(SRCDIR)sender.o $(SRCDIR)functions.o $(SRCDIR)socket.o $(SRCDIR)packet_implem.o $(SRCDIR)packet_debug.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-sender: sender.o functions.o socket.o packet_implem.o packet_debug.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-receiver: receiver.o functions.o socket.o packet_implem.o packet_debug.o
+receiver: $(SRCDIR)receiver.o $(SRCDIR)functions.o $(SRCDIR)socket.o $(SRCDIR)packet_implem.o $(SRCDIR)packet_debug.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
@@ -24,9 +24,9 @@ debug: clean all
 .PHONY: clean mrproper
 
 clean:
-	rm -rf *.o
+	rm -rf $(SRCDIR)*.o
 
 mrproper: clean
-	rm -rf $(EXEC)
+	rm -rf sender receiver $(OUTDIR)unit_test
 
 
