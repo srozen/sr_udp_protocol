@@ -30,6 +30,7 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
     if(file != NULL) {
         *f = fopen(file, openMode);
     }
+    free(file);
     return EXIT_SUCCESS;
 }
 
@@ -38,6 +39,12 @@ uint32_t timestamp() {
     gettimeofday(&now, NULL);
     long mill = (now.tv_sec*1000 + now.tv_usec/1000);
     return (uint32_t)(mill%1000000000);
+}
+
+void recompute_timeout(uint32_t timeout, uint32_t timestamp, uint32_t timenow){
+  fprintf(stderr, "Actual timeout : %d\n", timeout);
+  fprintf(stderr, "Should be actualized to : %d\n", (timestamp - timenow) + 100);
+  //&timeout = (timestamp - timenow) + 100;
 }
 
 void release_all_buffers(pkt_t ** pktBuf, int pktBufSize){
