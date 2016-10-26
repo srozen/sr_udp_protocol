@@ -38,12 +38,12 @@ int main(int argc, char * argv[]) {
 }
 
 int writing_loop(const int sfd, FILE * inFile) {
-    fprintf(stderr, "Begin loop to write in socket\n");
-
     // Can't change
     const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + HEADER_SIZE;
     const int pktBufSize = MAX_WINDOW_SIZE + 1;
     const int infd = fileno(inFile);
+    uint32_t timeout = TIME_OUT;
+
 
     // Packets buffer
     pkt_t * pktBuffer[pktBufSize];
@@ -124,6 +124,8 @@ int writing_loop(const int sfd, FILE * inFile) {
             } else {
 
                 pkt_debug(pktRe); // Debug ACK
+
+                recompute_timeout(timeout, pkt_get_timestamp(pktRe), timestamp());
 
                 ackSeqnum = pkt_get_seqnum(pktRe);
                 free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize);

@@ -22,6 +22,12 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
 uint32_t timestamp();
 
 /*
+ * Dynamic recomputation of timeout based on detected latency
+ */
+
+void recompute_timeout(uint32_t timeout, uint32_t timestamp, uint32_t timenow);
+
+/*
  * Free all packet buffer before closing
  */
 
