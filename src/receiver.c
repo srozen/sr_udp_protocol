@@ -91,7 +91,9 @@ int reading_loop(int sfd, FILE * outFile) {
         if(FD_ISSET(sfd, &selRe) && winFree > 0) {
             pkt_t * pktRead = read_packet(sizeMaxPkt, sfd);
             if(pktRead != NULL) {
-
+                if ( bufPkt[pkt_get_seqnum(pktRead) % windowSize] != NULL){
+                    free( bufPkt[pkt_get_seqnum(pktRead) % windowSize]);
+                }
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
 
                 uint8_t cpseq = seqnumAck;
@@ -112,7 +114,6 @@ int reading_loop(int sfd, FILE * outFile) {
             fprintf(stderr, "Write a packet\n");
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                 fprintf(stderr, "End of file return, close connection\n");
-                release_all_buffers(bufPkt, windowSize);
                 eof = 1;
             } else { // Packet with payload.
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
@@ -126,6 +127,7 @@ int reading_loop(int sfd, FILE * outFile) {
         }
     }
 // 8 Novembre interr logique et stru donnée
+    release_all_buffers(bufPkt, windowSize);
     return EXIT_SUCCESS;
 }
 

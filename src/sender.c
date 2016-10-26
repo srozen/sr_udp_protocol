@@ -132,7 +132,7 @@ int writing_loop(const int sfd, FILE * inFile) {
 
                 if(ackSeqnum == lastSeqnum) {
                     fprintf(stderr, "Ack of end file receive, close connection.\n");
-                    release_all_buffers(pktBuffer, pktBufSize);
+
                     eof = 1;
                 }
             }
@@ -141,7 +141,7 @@ int writing_loop(const int sfd, FILE * inFile) {
         timeout_check(sizeMaxPkt, sfd, pktBuffer, pktBufSize, &eof, &timeEof);
         // TODO : if not respond since x second => finish
     }
-
+    release_all_buffers(pktBuffer, pktBufSize);
     return EXIT_SUCCESS;
 }
 
