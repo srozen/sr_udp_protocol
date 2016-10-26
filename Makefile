@@ -1,7 +1,10 @@
 CC=gcc
 CFLAGS=-std=c99 -Wall -Werror -Wshadow -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all -D_POSIX_C_SOURCE=201112L -D_XOPEN_SOURCE
-LDFLAGS=-lz -L$(HOME)/local/lib -lcunit
-EXEC=sender receiver unit_test
+
+# Uncomment to compile cUnit test 
+LDFLAGS=-lz # -L$(HOME)/local/lib -lcunit
+
+EXEC=sender receiver # unit_test
 SRCDIR=src/
 OUTDIR=./tests/
 
