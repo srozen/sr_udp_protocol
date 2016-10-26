@@ -39,3 +39,10 @@ uint32_t timestamp() {
     long mill = (now.tv_sec*1000 + now.tv_usec/1000);
     return (uint32_t)(mill%1000000000);
 }
+
+void release_all_buffers(pkt_t ** pktBuf, int pktBufSize){
+  for(int i = 0; i < pktBufSize; i++){
+    if(pktBuf[i] != NULL)
+      pkt_del(pktBuf[i]);
+  }
+}

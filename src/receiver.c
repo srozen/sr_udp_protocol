@@ -112,8 +112,7 @@ int reading_loop(int sfd, FILE * outFile) {
             fprintf(stderr, "Write a packet\n");
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                 fprintf(stderr, "End of file return, close connection\n");
-                pkt_del(bufPkt[indWinRe]);
-                bufPkt[indWinRe] = NULL;
+                release_all_buffers(bufPkt, windowSize);
                 eof = 1;
             } else { // Packet with payload.
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));

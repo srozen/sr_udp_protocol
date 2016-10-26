@@ -7,6 +7,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include "packet_interface.h"
 
 #define USAGE "Usage:\n-f FILE    Specify a file to send as data, or to store data in it (optional).\nHOSTNAME   IPv6 address or hostname to reach.\n PORTNUM    Port number.\n"
 
@@ -19,5 +20,11 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
  * Return a timestamp from system time
  */
 uint32_t timestamp();
+
+/*
+ * Free all packet buffer before closing
+ */
+
+void release_all_buffers(pkt_t ** pktBuf, int pktBufSize);
 
 #endif //SR_UDP_PROTOCOL_FUNCTIONS_H

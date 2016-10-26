@@ -132,6 +132,7 @@ int writing_loop(const int sfd, FILE * inFile) {
 
                 if(ackSeqnum == lastSeqnum) {
                     fprintf(stderr, "Ack of end file receive, close connection.\n");
+                    release_all_buffers(pktBuffer, pktBufSize);
                     eof = 1;
                 }
             }
@@ -246,4 +247,3 @@ int can_send_packet(uint8_t ackSeqnum, uint8_t nextSeqnum, int winSize) {
     }
     return 0;
 }
-
