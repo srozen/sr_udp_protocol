@@ -46,6 +46,7 @@ void pkt_del(pkt_t *pkt) {
     if(pkt != NULL) {
         if(pkt->header.length != 0) {
             free(pkt->payload);
+            pkt->payload = NULL;
         }
         free(pkt);
     }
@@ -174,6 +175,9 @@ pkt_status_code pkt_set_payload(pkt_t *pkt, const char *data, const uint16_t len
     if(pkt_set_length(pkt, length) != PKT_OK) {
         return E_LENGTH;
     }
+    if(length == 0) {
+        return PKT_OK;
+    }
     char *payload = malloc(sizeof(char) * length);
     memset(payload, 0, length);
     memcpy(payload, data, sizeof(char) * length);
@@ -189,8 +193,8 @@ void increment_seqnum(uint8_t * seqnum) {
     }
 }
 
-void decrement_seqnum(uint8_t * seqnum){
-     if(*seqnum == 0) {
+void decrement_seqnum(uint8_t * seqnum) {
+    if(*seqnum == 0) {
         *seqnum = MAX_SEQNUM;
     } else {
         *seqnum -= 1;
