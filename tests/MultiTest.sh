@@ -4,7 +4,7 @@ failTest=0
 succesTest=0
 
 for ((i=0 ; 10 - $i ; i++)); do
-	./MyTest.sh
+	./LitleFileTest.sh
 	test=$!
 	result=$?
 	if [ $result -eq 0 ] ; then
