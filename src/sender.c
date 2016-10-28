@@ -53,14 +53,16 @@ int writing_loop(const int sfd, FILE * inFile) {
     uint8_t nextSeqnum = 0; // First seqnum must be 0, correspond to the next seqnum to send.
     uint8_t winSize = 1; //Window size must be 1 at begining
     uint8_t ackSeqnum = MAX_SEQNUM; // seqnum of last Ack receive
-    int lastSeqnum = -1; // seqnum of eof
+    int eofSeqnum = -1; // seqnum of eof
 
     int nfsd = sfd;
     if(infd > nfsd) {
         nfsd = infd;
     }
-    int eof = 0;
-    int timeEof = NB_LAUNCH_EOF;
+    int eof = 0; // To exit the loop
+    int timeEof = NB_LAUNCH_EOF; // Nb of maximal time we resend eof
+    int eofRead = 0; // If eofRead have be read
+    int lastSeqSend = -1; // seqnum of
 
     fd_set selRe;
     fd_set selWri;
@@ -83,7 +85,6 @@ int writing_loop(const int sfd, FILE * inFile) {
           also if the end of file was not send */
         if(FD_ISSET(infd, &selRe) && timeEof == NB_LAUNCH_EOF && can_send_packet(ackSeqnum, nextSeqnum, winSize) == 0) {
 
-            fprintf(stderr, "Prepare to send a new packet, lastSeq = %d, seqnumToSend = %d, winSie = %d\n", ackSeqnum, nextSeqnum, winSize);
             // Read from inFile
             char fileReadBuf[MAX_PAYLOAD_SIZE];
             ssize_t nbByteRe = read(infd, fileReadBuf, MAX_PAYLOAD_SIZE);
@@ -92,17 +93,31 @@ int writing_loop(const int sfd, FILE * inFile) {
             pkt_t * pktWr = pkt_new();
             init_pkt(pktWr, fileReadBuf, nbByteRe, nextSeqnum, PTYPE_DATA, winSize, timestamp());
 
-            if(send_new_packet(sfd, pktBufSize, sizeMaxPkt, pktBuffer, pktWr, nbByteRe) == 0) {
+            if(nbByteRe == 0) {
+                eofRead = 1;
+                lastSeqSend=nextSeqnum;
+                pkt_del(pktWr);
+            } else if(send_new_packet(sfd, pktBufSize, sizeMaxPkt, pktBuffer, pktWr, nbByteRe) == 0) {
                 increment_seqnum(&nextSeqnum);
-
-                if(nbByteRe == 0) { // End of file
-                    timeEof--;
-                    lastSeqnum = nextSeqnum;
-                    fprintf(stderr, "End of file send for firstTime (lastSeqnum = %d)\n", lastSeqnum);
-                }
             } else {
                 pkt_del(pktWr);
             }
+        }
+
+        if (eofRead == 1 && (int)ackSeqnum == lastSeqSend){ // Waiting to send eof
+            pkt_t * pktEof = pkt_new();
+            init_pkt(pktEof, "", 0, nextSeqnum, PTYPE_DATA, winSize, timestamp());
+            if(send_new_packet(sfd, pktBufSize, sizeMaxPkt, pktBuffer, pktEof, 0) == 0) {
+                timeEof--;
+                increment_seqnum(&nextSeqnum);
+                eofSeqnum = nextSeqnum;
+                increment_seqnum(&nextSeqnum);
+                fprintf(stderr, "End of file send for firstTime (eofSeqnum = %d)\n", eofSeqnum);
+            } else {
+                pkt_del(pktEof);
+            }
+
+            eofRead = 0;
         }
 
         // WHEN SOCKET RECEIVE A ACK
@@ -132,9 +147,8 @@ int writing_loop(const int sfd, FILE * inFile) {
 
                 winSize = pkt_get_window(pktRe); // take the windows of receiver
 
-                if(ackSeqnum == lastSeqnum) {
+                if(ackSeqnum == eofSeqnum) {
                     fprintf(stderr, "Ack of end file receive, close connection.\n");
-
                     eof = 1;
                 }
             }

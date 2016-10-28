@@ -91,8 +91,8 @@ int reading_loop(int sfd, FILE * outFile) {
         if(FD_ISSET(sfd, &selRe) && winFree > 0) {
             pkt_t * pktRead = read_packet(sizeMaxPkt, sfd);
             if(pktRead != NULL) {
-                if ( bufPkt[pkt_get_seqnum(pktRead) % windowSize] != NULL){
-                    pkt_del( bufPkt[pkt_get_seqnum(pktRead) % windowSize]);
+                if (bufPkt[pkt_get_seqnum(pktRead) % windowSize] != NULL){
+                    pkt_del(bufPkt[pkt_get_seqnum(pktRead) % windowSize]);
                 }
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
 
@@ -100,7 +100,6 @@ int reading_loop(int sfd, FILE * outFile) {
 
                 if (seqnumAck == pkt_get_seqnum(pktRead)){
                     increment_seqnum(&cpseq);
-                    //winFree--;
                 }
 
                 send_ack(sfd, cpseq, winFree, pkt_get_timestamp(pktRead));
