@@ -54,7 +54,7 @@ void pkt_del(pkt_t *pkt) {
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
 
-    if(len <= sizeof(pkt->header)) {
+    if(len < sizeof(pkt->header)) {
         return E_NOHEADER;
     }
 
@@ -62,23 +62,26 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt) {
 
     memcpy(&pkt->header, data, sizeof(pkt->header));
     readBytes += sizeof(pkt->header);
+
+    if(pkt_get_length(pkt) > MAX_PAYLOAD_SIZE) {
+        return E_LENGTH;
+    }
+    if(readBytes + pkt_get_length(pkt) + sizeof(pkt->crc) > len) {
+        return E_NOMEM;
+    }
+
     pkt_set_payload(pkt, data + readBytes, pkt_get_length(pkt));
     readBytes += pkt_get_length(pkt);
     memcpy(&pkt->crc, data + readBytes, sizeof(pkt->crc));
     readBytes += sizeof(pkt->crc);
 
-    if(readBytes > len) {
-        return E_NOMEM;
-    }
     if(pkt_get_crc(pkt) != compute_crc(pkt)) {
         return E_CRC;
     }
     if(pkt_get_type(pkt) != PTYPE_ACK && pkt_get_type(pkt) != PTYPE_DATA) {
         return E_TYPE;
     }
-    if(pkt_get_length(pkt) > MAX_PAYLOAD_SIZE) {
-        return E_LENGTH;
-    }
+
     return PKT_OK;
 }
 

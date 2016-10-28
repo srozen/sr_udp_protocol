@@ -137,16 +137,11 @@ int writing_loop(const int sfd, FILE * inFile) {
             if(decodeRet != PKT_OK) {
                 fprintf(stderr, "Error in decode of ack, error code = %d\n", decodeRet);
             } else {
-
                 pkt_debug(pktRe); // Debug ACK
-
                 recompute_timeout(timeout, pkt_get_timestamp(pktRe), timestamp());
-
                 ackSeqnum = pkt_get_seqnum(pktRe);
                 free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize);
-
                 winSize = pkt_get_window(pktRe); // take the windows of receiver
-
                 if(ackSeqnum == eofSeqnum) {
                     fprintf(stderr, "Ack of end file receive, close connection.\n");
                     eof = 1;
