@@ -22,15 +22,13 @@ int read_args(int argc, char * argv[], char** address, int * port, FILE** f, cha
 uint32_t timestamp();
 
 /*
- * Dynamic recomputation of timeout based on detected latency
- */
-
-void recompute_timeout(uint32_t timeout, uint32_t timestamp, uint32_t timenow);
-
-/*
  * Free all packet buffer before closing
  */
-
 void release_all_buffers(pkt_t ** pktBuf, int pktBufSize);
+
+/*
+ * For debug a packet
+ */
+void pkt_debug(pkt_t * pkt);
 
 #endif //SR_UDP_PROTOCOL_FUNCTIONS_H

@@ -42,8 +42,6 @@ int writing_loop(const int sfd, FILE * inFile) {
     const size_t sizeMaxPkt = MAX_PAYLOAD_SIZE + HEADER_SIZE;
     const int pktBufSize = MAX_WINDOW_SIZE + 1;
     const int infd = fileno(inFile);
-    uint32_t timeout = TIME_OUT;
-
 
     // Packets buffer
     pkt_t * pktBuffer[pktBufSize];
@@ -95,7 +93,7 @@ int writing_loop(const int sfd, FILE * inFile) {
 
             if(nbByteRe == 0) {
                 eofRead = 1;
-                lastSeqSend=nextSeqnum;
+                lastSeqSend = nextSeqnum;
                 pkt_del(pktWr);
             } else if(send_new_packet(sfd, pktBufSize, sizeMaxPkt, pktBuffer, pktWr, nbByteRe) == 0) {
                 increment_seqnum(&nextSeqnum);
@@ -104,7 +102,7 @@ int writing_loop(const int sfd, FILE * inFile) {
             }
         }
 
-        if (eofRead == 1 && (int)ackSeqnum == lastSeqSend){ // Waiting to send eof
+        if(eofRead == 1 && (int)ackSeqnum == lastSeqSend) { // Waiting to send eof
             pkt_t * pktEof = pkt_new();
             init_pkt(pktEof, "", 0, nextSeqnum, PTYPE_DATA, winSize, timestamp());
             if(send_new_packet(sfd, pktBufSize, sizeMaxPkt, pktBuffer, pktEof, 0) == 0) {
@@ -112,7 +110,8 @@ int writing_loop(const int sfd, FILE * inFile) {
                 increment_seqnum(&nextSeqnum);
                 eofSeqnum = nextSeqnum;
                 increment_seqnum(&nextSeqnum);
-                fprintf(stderr, "End of file send for firstTime (eofSeqnum = %d)\n", eofSeqnum);
+                // DEBUG
+                fprintf(stderr, "End of file send for the first time (eofSeqnum = %d)\n", eofSeqnum);
             } else {
                 pkt_del(pktEof);
             }
@@ -120,13 +119,11 @@ int writing_loop(const int sfd, FILE * inFile) {
             eofRead = 0;
         }
 
-        // WHEN SOCKET RECEIVE A ACK
+        // When a socket have received a ACK
         if(FD_ISSET(sfd, &selRe)) {
 
             char socketReadBuf[sizeMaxPkt];
-
             ssize_t nbByteReSo = read(sfd, socketReadBuf, sizeMaxPkt); // Read data from SFD
-
             if(nbByteReSo < 0) {
                 fprintf(stderr, "An error occured reading ACK in socket : %s\n", strerror(errno));
                 return EXIT_FAILURE;
@@ -137,11 +134,11 @@ int writing_loop(const int sfd, FILE * inFile) {
             if(decodeRet != PKT_OK) {
                 fprintf(stderr, "Error in decode of ack, error code = %d\n", decodeRet);
             } else {
-                pkt_debug(pktRe); // Debug ACK
-                recompute_timeout(timeout, pkt_get_timestamp(pktRe), timestamp());
+                // DEBUG
+                pkt_debug(pktRe);
                 ackSeqnum = pkt_get_seqnum(pktRe);
                 free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize);
-                winSize = pkt_get_window(pktRe); // take the windows of receiver
+                winSize = pkt_get_window(pktRe); // Take the window of receiver
                 if(ackSeqnum == eofSeqnum) {
                     fprintf(stderr, "Ack of end file receive, close connection.\n");
                     eof = 1;
@@ -186,7 +183,6 @@ void init_pkt(pkt_t * pkt, char * fileReadBuf, const uint16_t nbByteRe, const ui
     pkt_set_timestamp(pkt, timestamp);
 }
 
-
 void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize) {
 
     const uint8_t cpSeq = ackSeqnum;
@@ -195,11 +191,13 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize) {
     while(pktBuf[ackSeqnum % pktBufSize] != NULL) {
         uint8_t currenSeq = pkt_get_seqnum(pktBuf[ackSeqnum % pktBufSize]);
         if(currenSeq > (int)cpSeq + (MAX_SEQNUM - pktBufSize)) {
+            // DEBUG
             fprintf(stderr, "I free buffer number %d, seqnum = %d\n", currenSeq % pktBufSize, currenSeq);
             pkt_del(pktBuf[currenSeq % pktBufSize]);
             pktBuf[currenSeq % pktBufSize] = NULL;
         } else {
             if(currenSeq < (int)cpSeq && currenSeq >= (int)cpSeq - pktBufSize) {
+                // DEBUG
                 fprintf(stderr, "I free buffer number %d, seqnum %d\n", currenSeq % pktBufSize, currenSeq);
                 pkt_del(pktBuf[currenSeq % pktBufSize]);
                 pktBuf[currenSeq % pktBufSize] = NULL;
@@ -214,8 +212,6 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize) {
 
 void timeout_check(const size_t sizeMaxPkt, const int sfd, pkt_t ** pktBuf, int pktBufSize, int * eof, int * timeEof) {
     uint32_t time = timestamp();
-    // TODO make something with nbResend
-    int nbResend = 0;
     for(int i = 0; i < pktBufSize; i++) {
         if(pktBuf[i] != NULL && time > (pkt_get_timestamp(pktBuf[i]) + TIME_OUT)) {
             char socketWriteBuf[sizeMaxPkt];
@@ -224,6 +220,8 @@ void timeout_check(const size_t sizeMaxPkt, const int sfd, pkt_t ** pktBuf, int 
             size_t sizeMaxPktCp = sizeMaxPkt;
             pkt_encode(pktBuf[i], socketWriteBuf, &sizeMaxPktCp);
             int nbWrite = write(sfd, socketWriteBuf, sizeMaxPktCp);
+
+            // DEBUG
             fprintf(stderr, "Resend packet, seqnum = %d, nb byte : %d\n", pkt_get_seqnum(pktBuf[i]), nbWrite);
             if(nbWrite < 0) {
                 fprintf(stderr, "Client leave, finish Connection!\n");
@@ -237,7 +235,6 @@ void timeout_check(const size_t sizeMaxPkt, const int sfd, pkt_t ** pktBuf, int 
                     *eof = 1;
                 }
             }
-            nbResend++;
         }
     }
 }

@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) {
     reading_loop(sfd, outFile);
 
     close(sfd);
-    if (outFile!=stdout){
+    if(outFile != stdout) {
         close(fileno(outFile));
     }
     fprintf(stderr, "Exiting with success! (Receiver)\n");
@@ -64,7 +64,7 @@ int reading_loop(int sfd, FILE * outFile) {
 
     int outfd = fileno(outFile);
     int nfsd = sfd;
-    if (outfd>nfsd) {
+    if(outfd > nfsd) {
         nfsd = outfd;
     }
     int eof = 0;
@@ -91,41 +91,45 @@ int reading_loop(int sfd, FILE * outFile) {
         if(FD_ISSET(sfd, &selRe) && winFree > 0) {
             pkt_t * pktRead = read_packet(sizeMaxPkt, sfd);
             if(pktRead != NULL) {
-                if (bufPkt[pkt_get_seqnum(pktRead) % windowSize] != NULL){
+                if(bufPkt[pkt_get_seqnum(pktRead) % windowSize] != NULL) {
                     pkt_del(bufPkt[pkt_get_seqnum(pktRead) % windowSize]);
                 }
                 bufPkt[pkt_get_seqnum(pktRead) % windowSize] = pktRead;
 
                 uint8_t cpseq = seqnumAck;
 
-                if (seqnumAck == pkt_get_seqnum(pktRead)){
+                if(seqnumAck == pkt_get_seqnum(pktRead)) {
                     increment_seqnum(&cpseq);
+                    winFree--;
                 }
 
                 send_ack(sfd, cpseq, winFree, pkt_get_timestamp(pktRead));
 
-                fprintf(stderr, "I'm waiting packet number %d to write in file (index = %d)\n",seqnumAck, indWinRe);
+                // DEBUG
+                // fprintf(stderr, "I'm waiting packet number %d to write in file (index = %d)\n",seqnumAck, indWinRe);
             }
         }
 
         // If next pkt can be write
         if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe]) == seqnumAck) {
-            fprintf(stderr, "Write a packet\n");
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
                 fprintf(stderr, "End of file return, close connection\n");
                 eof = 1;
             } else { // Packet with payload.
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
-                fprintf(stderr, "Write out, nb wrotte bytes : %d\n", (int) nbByteW);
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
                 increment_seqnum(&seqnumAck);
                 indWinRe = seqnumAck % windowSize;
-                //winFree++;
+                if(winFree < MAX_WINDOW_SIZE) {
+                    winFree++;
+                }
+                // DEBUG
+                fprintf(stderr, "Write in output, nb wrotte bytes : %d\n", (int) nbByteW);
             }
         }
     }
-// 8 Novembre interr logique et stru donnée
+
     release_all_buffers(bufPkt, windowSize);
     return EXIT_SUCCESS;
 }
@@ -144,8 +148,10 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
 
     if(statusEnc == PKT_OK) {
         int nbByteAck = write(sfd, bufEnc, lenBuf);
-        fprintf(stderr, "Ack send seqnum = %d, window = %d, number byte write : %d\n", seqnum,window,nbByteAck);
+        // DEBUG
+        fprintf(stderr, "Ack send seqnum = %d, window = %d, number byte write : %d\n", seqnum, window, nbByteAck);
     } else {
+        // DEBUG
         fprintf(stderr, "Error encoding ack, number error : %d\n", statusEnc);
     }
 
@@ -161,12 +167,12 @@ pkt_t * read_packet(const int sizeMaxPkt, int sfd) {
     ssize_t nbByteR = read(sfd, bufRe, sizeMaxPkt);
     int validPkt = pkt_decode(bufRe, nbByteR, pktRe);
 
-    if(validPkt == PKT_OK) { // Verify the integrity of pkt and if there is place in window buffer
+    if(validPkt == PKT_OK) { // Verify the integrity of pkt.
+        // DEBUG
         pkt_debug(pktRe);
-        // Put in buf window
         return pktRe;
-    } else {
-        // If packet is not correct
+    } else { // Packet not valid
+        // DEBUG
         fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
         pkt_del(pktRe);
         return NULL;

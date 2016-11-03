@@ -4,10 +4,14 @@
 #include "functions.h"
 #include "socket.h"
 
-int init_suite(void) { return 0; }
-int clean_suite(void) { return 0; }
+int init_suite(void) {
+    return 0;
+}
+int clean_suite(void) {
+    return 0;
+}
 
-void test_arguments_reading(void){
+void test_arguments_reading(void) {
     FILE * outFile = stdout;
     char openMode[] = "w";
     int port = 0;
@@ -23,14 +27,13 @@ void test_arguments_reading(void){
     fclose(outFile);
     int partialArgs = read_args(argc2, argv2, &address, &port, &outFile, openMode);
 
-    if (fullArgs == 0 && partialArgs == 0) {
+    if(fullArgs == 0 && partialArgs == 0) {
         CU_PASS("read_args succeeded.\n");
-    }
-    else
+    } else
         CU_FAIL("read_args failed.\n");
 }
 
-void wrong_arguments_reading(void){
+void wrong_arguments_reading(void) {
     FILE * outFile = stdout;
     char openMode[] = "w";
     int port = 0;
@@ -42,30 +45,28 @@ void wrong_arguments_reading(void){
 
     int wrongArgs = read_args(argc, argv, &address, &port, &outFile, openMode);
 
-    if (wrongArgs != 0) {
+    if(wrongArgs != 0) {
         CU_PASS("read_args succeeded.\n");
-    }
-    else
-    CU_FAIL("read_args failed.\n");
+    } else
+        CU_FAIL("read_args failed.\n");
 
 }
 
-void real_address_test(void){
+void real_address_test(void) {
     char * address = "localhost";
-    char * address2= "";
+    char * address2 = "";
     struct sockaddr_in6 addr;
 
     const char *err = real_address(address, &addr);
     const char *err2 = real_address(address2, &addr);
 
-    if (err == 0 && err2 != 0) {
+    if(err == 0 && err2 != 0) {
         CU_PASS("Real Address succeeded.\n");
-    }
-    else
-    CU_FAIL("Real Address failed.\n");
+    } else
+        CU_FAIL("Real Address failed.\n");
 }
 
-void create_socket_test(void){
+void create_socket_test(void) {
     char * address = "localhost";
     int port = 12345;
     struct sockaddr_in6 addr;
@@ -77,14 +78,13 @@ void create_socket_test(void){
     fprintf(stderr, "Good : %d\n", sfd_good);
     fprintf(stderr, "bad : %d\n", sfd_bad);
 
-    if (sfd_good > 0 && sfd_bad == -1) {
+    if(sfd_good > 0 && sfd_bad == -1) {
         CU_PASS("Create Socket succeeded.\n");
-    }
-    else
-    CU_FAIL("Create Socket failed.\n");
+    } else
+        CU_FAIL("Create Socket failed.\n");
 }
 
-void wait_for_client_test(void){
+void wait_for_client_test(void) {
     char * address = "localhost";
     int port = 12345;
     struct sockaddr_in6 rec_addr;
@@ -99,39 +99,38 @@ void wait_for_client_test(void){
     ssize_t written = write(send_sfd, buf, 5);
     int receive = wait_for_client(rec_sfd);
 
-    if (receive >= 0 && written > 0) {
+    if(receive >= 0 && written > 0) {
         CU_PASS("Create Socket succeeded.\n");
-    }
-    else
-    CU_FAIL("Create Socket failed.\n");
+    } else
+        CU_FAIL("Create Socket failed.\n");
 }
 
 /* The main() function for setting up and running the tests.
  * Returns a CUE_SUCCESS on successful running, another
  * CUnit error code on failure.
  */
-int main ( void ) {
+int main(void) {
     CU_pSuite pSuite = NULL;
 
     /* initialize the CUnit test registry */
-    if (CUE_SUCCESS != CU_initialize_registry())
+    if(CUE_SUCCESS != CU_initialize_registry())
         return CU_get_error();
 
     /* add a suite to the registry */
     pSuite = CU_add_suite("Selective Repeat Protocol Suite", init_suite, clean_suite);
-    if (NULL == pSuite) {
+    if(NULL == pSuite) {
         CU_cleanup_registry();
         return CU_get_error();
     }
 
     /* add the tests to the suite */
-    if ((NULL == CU_add_test(pSuite, "Read Args Test", test_arguments_reading)) ||
-        (NULL == CU_add_test(pSuite, "Wrong Read Args Test", wrong_arguments_reading)) ||
-        (NULL == CU_add_test(pSuite, "Real Address Conversion", real_address_test)) ||
-        (NULL == CU_add_test(pSuite, "Create Socket", create_socket_test)) ||
-        (NULL == CU_add_test(pSuite, "Create Socket", wait_for_client_test))
+    if((NULL == CU_add_test(pSuite, "Read Args Test", test_arguments_reading)) ||
+            (NULL == CU_add_test(pSuite, "Wrong Read Args Test", wrong_arguments_reading)) ||
+            (NULL == CU_add_test(pSuite, "Real Address Conversion", real_address_test)) ||
+            (NULL == CU_add_test(pSuite, "Create Socket", create_socket_test)) ||
+            (NULL == CU_add_test(pSuite, "Create Socket", wait_for_client_test))
 
-            ) {
+      ) {
         CU_cleanup_registry();
         return CU_get_error();
     }
@@ -142,14 +141,14 @@ int main ( void ) {
     printf("\n");
     CU_basic_show_failures(CU_get_failure_list());
     printf("\n\n");
-/*
-   // Run all tests using the automated interface
-   CU_automated_run_tests();
-   CU_list_tests_to_file();
+    /*
+       // Run all tests using the automated interface
+       CU_automated_run_tests();
+       CU_list_tests_to_file();
 
-   // Run all tests using the console interface
-   CU_console_run_tests();
-*/
+       // Run all tests using the console interface
+       CU_console_run_tests();
+    */
     /* Clean up registry and return */
     CU_cleanup_registry();
     return CU_get_error();
