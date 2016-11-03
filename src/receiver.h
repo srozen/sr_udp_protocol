@@ -6,10 +6,10 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/select.h>
+
 #include "functions.h"
 #include "socket.h"
 #include "packet_interface.h"
-#include "packet_debug.h"
 
 /*
  * Main loop when the connection is established.

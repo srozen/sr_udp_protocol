@@ -13,10 +13,10 @@ all: $(EXEC)
 unit_test: $(SRCDIR)unit_test.o $(SRCDIR)functions.o $(SRCDIR)socket.o
 	$(CC) -o $(OUTDIR)$@ $^ $(LDFLAGS)
 
-sender: $(SRCDIR)sender.o $(SRCDIR)functions.o $(SRCDIR)socket.o $(SRCDIR)packet_implem.o $(SRCDIR)packet_debug.o
+sender: $(SRCDIR)sender.o $(SRCDIR)functions.o $(SRCDIR)socket.o $(SRCDIR)packet_implem.o 
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-receiver: $(SRCDIR)receiver.o $(SRCDIR)functions.o $(SRCDIR)socket.o $(SRCDIR)packet_implem.o $(SRCDIR)packet_debug.o
+receiver: $(SRCDIR)receiver.o $(SRCDIR)functions.o $(SRCDIR)socket.o $(SRCDIR)packet_implem.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
