@@ -1,7 +1,8 @@
 #include "receiver.h"
 
 int main(int argc, char * argv[]) {
-    fprintf(stderr, "Receiver Launch : number args '%d'\n", argc);
+    // DEBUG
+    // fprintf(stderr, "Receiver Launch : number args '%d'\n", argc);
 
     FILE * outFile = stdout;
     char openMode[] = "w";
@@ -42,12 +43,14 @@ int main(int argc, char * argv[]) {
     if(outFile != stdout) {
         close(fileno(outFile));
     }
-    fprintf(stderr, "Exiting with success! (Receiver)\n");
+    // DEBUG
+    // fprintf(stderr, "Exiting with success! (Receiver)\n");
     return EXIT_SUCCESS;
 }
 
 int reading_loop(int sfd, FILE * outFile) {
-    fprintf(stderr, "Begin loop to read socket\n");
+    // DEBUG
+    // fprintf(stderr, "Begin loop to read socket\n");
 
     // init variable
     const int sizeMaxPkt = MAX_PAYLOAD_SIZE + 12;
@@ -113,10 +116,17 @@ int reading_loop(int sfd, FILE * outFile) {
         // If next pkt can be write
         if(bufPkt[indWinRe] != NULL && pkt_get_seqnum(bufPkt[indWinRe]) == seqnumAck) {
             if(pkt_get_length(bufPkt[indWinRe]) == 0) { // End of file receive
-                fprintf(stderr, "End of file return, close connection\n");
+                // DEBUG
+                // fprintf(stderr, "End of file return, close connection\n");
                 eof = 1;
             } else { // Packet with payload.
                 ssize_t nbByteW = write(outfd, pkt_get_payload(bufPkt[indWinRe]), pkt_get_length(bufPkt[indWinRe]));
+
+                if (nbByteW < pkt_get_length(bufPkt[indWinRe])){
+                    fprintf(stderr, "Can't write all byte in output stream\n");
+                    return EXIT_FAILURE;
+                }
+
                 pkt_del(bufPkt[indWinRe]);
                 bufPkt[indWinRe] = NULL;
                 increment_seqnum(&seqnumAck);
@@ -125,7 +135,7 @@ int reading_loop(int sfd, FILE * outFile) {
                     winFree++;
                 }
                 // DEBUG
-                fprintf(stderr, "Write in output, nb wrotte bytes : %d\n", (int) nbByteW);
+                // fprintf(stderr, "Write in output, nb wrotte bytes : %d\n", (int) nbByteW);
             }
         }
     }
@@ -142,17 +152,20 @@ void send_ack(const int sfd, uint8_t seqnum, uint8_t window, uint32_t timestamp)
     pkt_set_window(pktAck, window);
     pkt_set_timestamp(pktAck, timestamp);
 
-    size_t lenBuf = sizeof(pktAck);
+    size_t lenBuf = HEADER_SIZE;
     char * bufEnc = malloc(lenBuf);
     int statusEnc = pkt_encode(pktAck, bufEnc, &lenBuf);
 
     if(statusEnc == PKT_OK) {
         int nbByteAck = write(sfd, bufEnc, lenBuf);
+        if (nbByteAck < HEADER_SIZE){
+            fprintf(stderr, "Can't write all ack in socket\n");
+        }
         // DEBUG
-        fprintf(stderr, "Ack send seqnum = %d, window = %d, number byte write : %d\n", seqnum, window, nbByteAck);
+        // fprintf(stderr, "Ack send seqnum = %d, window = %d, number byte write : %d\n", seqnum, window, nbByteAck);
     } else {
         // DEBUG
-        fprintf(stderr, "Error encoding ack, number error : %d\n", statusEnc);
+        // fprintf(stderr, "Error encoding ack, number error : %d\n", statusEnc);
     }
 
     free(bufEnc);
@@ -169,11 +182,11 @@ pkt_t * read_packet(const int sizeMaxPkt, int sfd) {
 
     if(validPkt == PKT_OK) { // Verify the integrity of pkt.
         // DEBUG
-        pkt_debug(pktRe);
+        // pkt_debug(pktRe);
         return pktRe;
     } else { // Packet not valid
         // DEBUG
-        fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
+        // fprintf(stderr, "Packet not valid, error code : %d\n", validPkt);
         pkt_del(pktRe);
         return NULL;
     }

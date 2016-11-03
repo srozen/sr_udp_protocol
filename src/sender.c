@@ -1,7 +1,8 @@
 #include "sender.h"
 
 int main(int argc, char * argv[]) {
-    fprintf(stderr, "Sender Launch : number args '%d'\n", argc);
+    // DEBUG
+    // fprintf(stderr, "Sender Launch : number args '%d'\n", argc);
 
     FILE * inFile = stdin;
     char openMode[] = "r";
@@ -33,7 +34,8 @@ int main(int argc, char * argv[]) {
     if(inFile != stdin) {
         close(fileno(inFile));
     }
-    fprintf(stderr, "Exiting with success! (Sender)\n");
+    // DEBUG
+    // fprintf(stderr, "Exiting with success! (Sender)\n");
     return EXIT_SUCCESS;
 }
 
@@ -111,7 +113,7 @@ int writing_loop(const int sfd, FILE * inFile) {
                 eofSeqnum = nextSeqnum;
                 increment_seqnum(&nextSeqnum);
                 // DEBUG
-                fprintf(stderr, "End of file send for the first time (eofSeqnum = %d)\n", eofSeqnum);
+                // fprintf(stderr, "End of file send for the first time (eofSeqnum = %d)\n", eofSeqnum);
             } else {
                 pkt_del(pktEof);
             }
@@ -132,15 +134,17 @@ int writing_loop(const int sfd, FILE * inFile) {
             pkt_t * pktRe = pkt_new();
             int decodeRet = pkt_decode(socketReadBuf, nbByteReSo, pktRe); // Create new packet from buffer
             if(decodeRet != PKT_OK) {
-                fprintf(stderr, "Error in decode of ack, error code = %d\n", decodeRet);
+                // DEBUG
+                // fprintf(stderr, "Error in decode of ack, error code = %d\n", decodeRet);
             } else {
                 // DEBUG
-                pkt_debug(pktRe);
+                // pkt_debug(pktRe);
                 ackSeqnum = pkt_get_seqnum(pktRe);
                 free_packet_buffer(pktBuffer, ackSeqnum, pktBufSize);
                 winSize = pkt_get_window(pktRe); // Take the window of receiver
                 if(ackSeqnum == eofSeqnum) {
-                    fprintf(stderr, "Ack of end file receive, close connection.\n");
+                    // DEBUG
+                    // fprintf(stderr, "Ack of end file receive, close connection.\n");
                     eof = 1;
                 }
             }
@@ -171,7 +175,8 @@ int send_new_packet(const int sfd, const int pktBufSize, const size_t sizeMaxPkt
         fprintf(stderr, "Error on write from file in socket\n");
         return -1;
     }
-    fprintf(stderr, "Send a packet (byte write %d)\n", (int) nbByteWr);
+    // DEBUG
+    // fprintf(stderr, "Send a packet (byte write %d)\n", (int) nbByteWr);
     return 0;
 }
 
@@ -192,13 +197,13 @@ void free_packet_buffer(pkt_t ** pktBuf, uint8_t ackSeqnum, int pktBufSize) {
         uint8_t currenSeq = pkt_get_seqnum(pktBuf[ackSeqnum % pktBufSize]);
         if(currenSeq > (int)cpSeq + (MAX_SEQNUM - pktBufSize)) {
             // DEBUG
-            fprintf(stderr, "I free buffer number %d, seqnum = %d\n", currenSeq % pktBufSize, currenSeq);
+            // fprintf(stderr, "I free buffer number %d, seqnum = %d\n", currenSeq % pktBufSize, currenSeq);
             pkt_del(pktBuf[currenSeq % pktBufSize]);
             pktBuf[currenSeq % pktBufSize] = NULL;
         } else {
             if(currenSeq < (int)cpSeq && currenSeq >= (int)cpSeq - pktBufSize) {
                 // DEBUG
-                fprintf(stderr, "I free buffer number %d, seqnum %d\n", currenSeq % pktBufSize, currenSeq);
+                // fprintf(stderr, "I free buffer number %d, seqnum %d\n", currenSeq % pktBufSize, currenSeq);
                 pkt_del(pktBuf[currenSeq % pktBufSize]);
                 pktBuf[currenSeq % pktBufSize] = NULL;
             } else  {
@@ -222,7 +227,7 @@ void timeout_check(const size_t sizeMaxPkt, const int sfd, pkt_t ** pktBuf, int 
             int nbWrite = write(sfd, socketWriteBuf, sizeMaxPktCp);
 
             // DEBUG
-            fprintf(stderr, "Resend packet, seqnum = %d, nb byte : %d\n", pkt_get_seqnum(pktBuf[i]), nbWrite);
+            // fprintf(stderr, "Resend packet, seqnum = %d, nb byte : %d\n", pkt_get_seqnum(pktBuf[i]), nbWrite);
             if(nbWrite < 0) {
                 fprintf(stderr, "Client leave, finish Connection!\n");
                 *eof = 1;
